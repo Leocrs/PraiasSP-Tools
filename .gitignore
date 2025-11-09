@@ -1,0 +1,96 @@
+# Environment variables (NUNCA commitar!)
+.env
+.env.local
+.env.production
+.env*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Database files (arquivos sensíveis com dados históricos)
+*.db
+*.sqlite3
+*.sqlite
+historico_base.db
+
+# Logs
+*.log
+npm-debug.log*
+gunicorn.log
+
+# Backup files
+*.backup
+*.bak
+*.tmp
+*.temp
+
+# Vercel
+.vercel
+
+# Arquivos de upload (PDFs temporários)
+uploads/
+temp/
+*.pdf
+
+# Arquivos gerados
+*.xlsx
+*.html
+Riviera_*.xlsx
+Riviera_*.html
+*.csv
+
+# Cache
+.cache/
+cache/
+.pytest_cache/
+
+# Node modules (se usar frontend tools)
+node_modules/
+package-lock.json
+
+# Sistema
+.vercel/
+.next/
+.nuxt/
+.cache/
+
+# Dados sensíveis
+dados_sensiveis/
+relatorios_privados/
