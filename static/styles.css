@@ -4,14 +4,14 @@
    ================================ */
 
 :root {
-  --color-primary: #1a7d4d;
-  --color-primary-light: #2d9b6a;
-  --color-primary-dark: #0f5a3a;
-  --color-secondary: #4a9d6f;
-  --color-accent: #45b88f;
+  --color-primary: #0e938f;
+  --color-primary-light: #10b981;
+  --color-primary-dark: #0b7a77;
+  --color-secondary: #059669;
+  --color-accent: #34d399;
   --color-warning: #f39c12;
   --color-danger: #e74c3c;
-  --color-success: #27ae60;
+  --color-success: #10b981;
   --color-info: #3498db;
   --color-background: #f8f9fa;
   --color-surface: #ffffff;
@@ -91,6 +91,13 @@ body {
   align-items: center;
   gap: var(--spacing-lg);
   box-shadow: var(--shadow-md);
+}
+
+.logo-header {
+  height: 60px;
+  width: auto;
+  display: flex;
+  align-items: center;
 }
 
 .header h1 {
