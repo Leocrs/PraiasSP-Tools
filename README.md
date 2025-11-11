@@ -24,8 +24,7 @@ Aplicação web profissional para automatizar o processamento mensal das presta�
 PraiasSP-Tools/
 ├── api/
 │   ├── __init__.py
-│   ├── index.py                 # API Principal (Flask)
-│   └── __pycache__/
+│   └── index.py                 # API Principal (Flask) - com endpoint /api/analyze-pdf
 ├── static/
 │   ├── styles.css               # Estilos (Identidade Verde Tools)
 │   └── app.js                   # Frontend JavaScript
@@ -34,16 +33,16 @@ PraiasSP-Tools/
 ├── data/                        # Banco de dados (ignorado git)
 │   └── historico_riviera.db
 ├── uploads/                     # PDFs temporários (ignorado git)
-├── .env                         # Variáveis de ambiente (NUNCA commitar)
-├── .env.example                 # Exemplo de .env
-├── .gitignore                   # Arquivo de exclusão git
+├── .env.example                 # Template variáveis de ambiente
+├── .gitignore                   # Proteção: .env, data/, uploads/
 ├── requirements.txt             # Dependências Python
-├── vercel.json                  # Configuração Vercel
-├── Procfile                     # Configuração Render
-├── runtime.txt                  # Runtime Python
-├── gunicorn.conf.py             # Configuração Gunicorn
-├── build.sh                     # Script de build
-├── deploy.sh                    # Script de deploy
+├── vercel.json                  # Configuração Vercel (frontend)
+├── Procfile                     # Configuração Render (backend)
+├── runtime.txt                  # Python 3.11.7
+├── gunicorn.conf.py             # Servidor produção
+├── DEPLOY.md                    # 🚀 Guia deployment
+├── TAREFAS_PENDENTES.md         # 📋 Roadmap
+├── STATUS_PRODUCAO.md           # 📊 Status atual
 └── README.md                    # Este arquivo
 ```
 
@@ -114,19 +113,80 @@ gunicorn -c gunicorn.conf.py api.index:app
 
 ---
 
+## 🤖 Funcionalidades - FASE 2.1 (Nov 11, 2025)
+
+### ✅ Análise Automática de PDFs com OpenAI
+
+**Endpoint**: `POST /api/analyze-pdf`
+
+```bash
+curl -F "file=@relatorio.pdf" http://localhost:5000/api/analyze-pdf
+```
+
+**Response**:
+
+```json
+{
+  "status": "success",
+  "analysis": {
+    "tipo_documento": "Relatório Financeiro",
+    "periodo": "2025-11",
+    "despesas_totais": 2154037.89,
+    "aportes": 850000.0,
+    "saldo": 962170.12,
+    "obras": ["603 - Ampliação Shopping Riviera"],
+    "insights": "Análise realizada por GPT-4o"
+  },
+  "saved_to_db": true
+}
+```
+
+**Como funciona**:
+
+1. Extrai texto do PDF com PyPDF2
+2. Envia para GPT-4o com prompt especializado
+3. Analisa estrutura de dados financeiros
+4. Salva resultado em tabela `movimentos` do SQLite
+5. Retorna JSON estruturado
+
+---
+
 ## 📦 Dependências Principais
 
-| Pacote        | Versão  | Descrição                |
-| ------------- | ------- | ------------------------ |
-| Flask         | 2.3.3   | Web framework            |
-| flask-cors    | 4.0.0   | CORS para API            |
-| OpenAI        | ≥1.40.0 | API OpenAI para análise  |
-| pandas        | ≥2.0.0  | Processamento de dados   |
-| openpyxl      | ≥3.10.0 | Geração de Excel         |
-| PyPDF2        | 3.0.1   | Leitura de PDFs          |
-| pdfplumber    | 0.11.0  | Extração de tabelas PDFs |
-| gunicorn      | 21.2.0  | WSGI HTTP Server         |
-| python-dotenv | 1.0.1   | Variáveis de ambiente    |
+| Pacote        | Versão  | Descrição                   |
+| ------------- | ------- | --------------------------- |
+| Flask         | 2.3.3   | Web framework               |
+| flask-cors    | 4.0.0   | CORS para API               |
+| OpenAI        | ≥1.40.0 | GPT-4o para análise PDFs    |
+| PyPDF2        | 3.0.1   | Extração de texto PDFs      |
+| pandas        | ≥2.0.0  | Processamento de dados      |
+| openpyxl      | ≥3.10.0 | Geração de Excel (Fase 2.2) |
+| gunicorn      | 21.2.0  | WSGI HTTP Server            |
+| python-dotenv | 1.0.1   | Variáveis de ambiente       |
+
+---
+
+## 🌍 Próximos Passos
+
+### 🚀 Deploy em Produção
+
+→ Leia **`DEPLOY.md`** para deploy em Vercel + Render
+
+### 📋 Roadmap de Desenvolvimento
+
+→ Leia **`TAREFAS_PENDENTES.md`** para fases 2.2-2.5
+
+### 📊 Status Atual
+
+→ Leia **`STATUS_PRODUCAO.md`** para checklist deployment
+
+### 🔐 Segurança
+
+→ Leia **`SECURITY.md`** para boas práticas
+
+---
+
+## 🔐 Segurança & Variáveis de Ambiente
 
 ---
 
