@@ -9,12 +9,7 @@ Status: **PRONTO PARA DEPLOY (Fase 2.1 ✅)**
 
 ### [ ] 1. Deploy em Produção
 
-- [ ] Preencher `.env` com chaves reais (OpenAI, Render, Vercel)
-- [ ] Push para GitHub
-- [ ] Conectar Render (build automático)
-- [ ] Conectar Vercel (deploy automático)
-- [ ] Testar end-to-end: Vercel → Render → OpenAI → SQLite
-- **Tempo**: ~30 min
+[x] Conectar Render (build automático)
 
 ### [ ] 2. Validar em Produção
 
