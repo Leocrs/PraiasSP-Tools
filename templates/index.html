@@ -19,7 +19,11 @@
 
       <div class="input-container">
         <div class="input-wrapper">
-          <label for="fileInput" class="file-input-label" title="Anexar arquivo">
+          <label
+            for="fileInput"
+            class="file-input-label"
+            title="Anexar arquivo"
+          >
             📎
           </label>
           <input
@@ -67,7 +71,9 @@
         <input type="number" id="maxTokens" value="4000" placeholder="4000" />
       </div>
       <div class="config-group">
-        <span class="protected-key">🔒 Chave de API protegida no servidor!</span>
+        <span class="protected-key"
+          >🔒 Chave de API protegida no servidor!</span
+        >
       </div>
     </div>
 
@@ -131,7 +137,10 @@
           baseHistorica = baseHistorica.slice(-50);
         }
 
-        safeLocalStorageSetItem("toolsBaseHistorica", JSON.stringify(baseHistorica));
+        safeLocalStorageSetItem(
+          "toolsBaseHistorica",
+          JSON.stringify(baseHistorica)
+        );
         console.log("✅ Análise salva na base histórica:", registro.id);
       }
 
@@ -140,7 +149,9 @@
         if (dados) {
           try {
             baseHistorica = JSON.parse(dados);
-            console.log(`📚 Base histórica carregada: ${baseHistorica.length} registros`);
+            console.log(
+              `📚 Base histórica carregada: ${baseHistorica.length} registros`
+            );
           } catch (e) {
             console.warn("⚠️ Erro ao parsear base histórica:", e.message);
           }
@@ -159,19 +170,27 @@
         const resumo = `📚 <strong>CONSULTA À BASE HISTÓRICA - PRAIASSP TOOLS</strong><br><br>
         <strong>📊 Estatísticas Gerais:</strong><br>
         • Total de análises: <strong>${baseHistorica.length}</strong><br>
-        • Período: ${baseHistorica[0]?.data} até ${baseHistorica[baseHistorica.length - 1]?.data}<br>
-        • Última análise: ${baseHistorica[baseHistorica.length - 1]?.data}<br><br>
+        • Período: ${baseHistorica[0]?.data} até ${
+          baseHistorica[baseHistorica.length - 1]?.data
+        }<br>
+        • Última análise: ${
+          baseHistorica[baseHistorica.length - 1]?.data
+        }<br><br>
         <strong>🏢 Análises Recentes:</strong><br>
         ${baseHistorica
           .slice(-5)
           .reverse()
-          .map((reg) => `• <strong>${reg.data}</strong> - ${reg.arquivos.join(", ")}`)
+          .map(
+            (reg) =>
+              `• <strong>${reg.data}</strong> - ${reg.arquivos.join(", ")}`
+          )
           .join("<br>")}`;
 
         addMessage("assistant", resumo);
       }
 
-      document.getElementById("consultarHistorico").onclick = consultarBaseHistorica;
+      document.getElementById("consultarHistorico").onclick =
+        consultarBaseHistorica;
 
       document.addEventListener("DOMContentLoaded", function () {
         checkLocalStorageAvailability();
@@ -199,7 +218,8 @@
       });
 
       const scriptXLSX = document.createElement("script");
-      scriptXLSX.src = "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js";
+      scriptXLSX.src =
+        "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js";
       document.head.appendChild(scriptXLSX);
 
       let currentFiles = [];
@@ -211,18 +231,29 @@
           "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js";
       }
 
-      document.getElementById("fileInput").addEventListener("change", handleFileSelect);
-      document.getElementById("removeFile").addEventListener("click", removeFile);
-      document.getElementById("sendButton").addEventListener("click", sendMessage);
-      document.getElementById("messageInput").addEventListener("keydown", handleKeyDown);
-      document.getElementById("messageInput").addEventListener("input", adjustTextareaHeight);
+      document
+        .getElementById("fileInput")
+        .addEventListener("change", handleFileSelect);
+      document
+        .getElementById("removeFile")
+        .addEventListener("click", removeFile);
+      document
+        .getElementById("sendButton")
+        .addEventListener("click", sendMessage);
+      document
+        .getElementById("messageInput")
+        .addEventListener("keydown", handleKeyDown);
+      document
+        .getElementById("messageInput")
+        .addEventListener("input", adjustTextareaHeight);
 
       loadSettings();
 
       async function loadSettings() {
         try {
           const model = safeLocalStorageGetItem("openai_model") || "gpt-4o";
-          const maxTokens = Number(safeLocalStorageGetItem("max_tokens")) || 4000;
+          const maxTokens =
+            Number(safeLocalStorageGetItem("max_tokens")) || 4000;
 
           document.getElementById("model").value = model;
           document.getElementById("maxTokens").value = maxTokens;
@@ -262,7 +293,7 @@
       function extractEssentialContent(text) {
         let essentialContent = text;
         essentialContent = essentialContent.replace(/\n{3,}/g, "\n\n");
-        
+
         if (essentialContent.length > 8000) {
           essentialContent = essentialContent.substring(0, 8000);
           essentialContent += "\n\n[... conteúdo editado para espaço]";
@@ -282,7 +313,9 @@
               for (let i = 1; i <= pdf.numPages; i++) {
                 const page = await pdf.getPage(i);
                 const textContent = await page.getTextContent();
-                const pageText = textContent.items.map((item) => item.str).join(" ");
+                const pageText = textContent.items
+                  .map((item) => item.str)
+                  .join(" ");
                 fullText += `\n\n--- Página ${i} ---\n${pageText}`;
               }
               resolve(fullText.trim());
@@ -305,7 +338,9 @@
               let allData = "";
               workbook.SheetNames.forEach((sheetName) => {
                 const worksheet = workbook.Sheets[sheetName];
-                const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, {
+                  header: 1,
+                });
                 allData += `\n\n--- Planilha: ${sheetName} ---\n`;
                 jsonData.forEach((row, index) => {
                   if (row.length > 0) {
@@ -363,13 +398,18 @@
           let response = "";
 
           if (fileContents && fileContents.length > 0) {
-            updateLoadingMessage(loadingId, `Analisando ${fileContents.length} arquivo(s)...`);
+            updateLoadingMessage(
+              loadingId,
+              `Analisando ${fileContents.length} arquivo(s)...`
+            );
 
             let consolidatedMessage = `ANÁLISE DE DOCUMENTOS\n\n`;
 
             fileContents.forEach((file, fileIndex) => {
               const essentialContent = extractEssentialContent(file.content);
-              consolidatedMessage += `\n${"═".repeat(50)}\nDOCUMENTO ${fileIndex + 1}: ${file.name}\n${"═".repeat(50)}\n`;
+              consolidatedMessage += `\n${"═".repeat(50)}\nDOCUMENTO ${
+                fileIndex + 1
+              }: ${file.name}\n${"═".repeat(50)}\n`;
               consolidatedMessage += essentialContent;
             });
 
@@ -432,7 +472,9 @@
           }
         }
 
-        const filename = `analise_${new Date().toISOString().slice(0, 10)}.xlsx`;
+        const filename = `analise_${new Date()
+          .toISOString()
+          .slice(0, 10)}.xlsx`;
         XLSX.writeFile(wb, filename);
       };
 
@@ -486,7 +528,8 @@
         console.log("🔗 Iniciando chamada ao backend...");
 
         const model = document.getElementById("model").value || "gpt-4o";
-        const maxTokens = parseInt(document.getElementById("maxTokens").value) || 4000;
+        const maxTokens =
+          parseInt(document.getElementById("maxTokens").value) || 4000;
 
         const messages = [
           { role: "system", content: systemPrompt },
@@ -515,7 +558,9 @@
           }
 
           const data = await response.json();
-          return data.choices[0].message.content || data.analysis || data.message;
+          return (
+            data.choices[0].message.content || data.analysis || data.message
+          );
         } catch (error) {
           console.error("❌ Erro ao chamar backend:", error);
           throw error;
@@ -642,7 +687,9 @@
         const processingStatus = document.getElementById("processingStatus");
 
         if (fileContents.length > 0) {
-          fileName.textContent = fileContents.map((file) => file.name).join(", ");
+          fileName.textContent = fileContents
+            .map((file) => file.name)
+            .join(", ");
           processingStatus.textContent = `${fileContents.length} arquivo(s) adicionado(s)`;
           preview.classList.add("show");
           preview.style.display = "block";
