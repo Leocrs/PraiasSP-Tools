@@ -176,7 +176,11 @@ def health():
 @app.route('/', methods=['GET'])
 def index():
     """Servir página inicial"""
-    return send_from_directory('../templates', 'index.html')
+    try:
+        return send_from_directory(os.path.join(os.path.dirname(__file__), '..', 'templates'), 'index.html')
+    except Exception as e:
+        print(f"❌ Erro ao servir index.html: {e}")
+        return jsonify({'error': 'Página não encontrada', 'details': str(e)}), 404
 
 # ================================
 # ROTAS - DADOS
