@@ -7,7 +7,8 @@
 // CONFIGURAÇÃO E UTILITÁRIOS
 // ================================
 
-const API_BASE = "/api";
+// Chamadas de API devem apontar para o backend no Render (não rodamos funções Python no Vercel)
+const API_BASE = "https://praiassp-tools.onrender.com/api";
 
 // Formatação de valores monetários
 function formatarMoeda(valor) {

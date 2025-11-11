@@ -1,0 +1,11 @@
+# Evita que Vercel crie serverless functions a partir da pasta api/
+api/
+api/*
+
+# Mantém outros arquivos estáticos
+!static/
+!templates/
+index.html
+static/
+templates/
+README.md
