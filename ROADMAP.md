@@ -45,59 +45,80 @@
 
 ---
 
-## 🎯 FASE 2 - Próximas Implementações (Semanas 1-2)
+## 🎯 FASE 2.1 - Integração OpenAI ✅ IMPLEMENTADO
 
-### 1. Integração com OpenAI (GPT)
+### Status: ✅ CONCLUÍDO (Nov 11, 2025)
 
-```python
-# Endpoint para analisar PDFs com IA
-POST /api/analyze-pdf
-- Receber arquivo PDF
-- Enviar para OpenAI com contexto
-- Extrair dados estruturados
-- Retornar JSON com movimentos
+**O que foi implementado:**
+
+- ✅ Endpoint `POST /api/analyze-pdf` funcionando
+- ✅ Função `extract_pdf_text()` - Extração com PyPDF2
+- ✅ Função `analyze_with_openai()` - Análise com GPT-4o
+- ✅ Função `save_analysis_to_db()` - Persistência em SQLite
+- ✅ Segurança: API Key protegida em `.env` (gitignored)
+- ✅ Documentação: `SETUP_FASE_2_1.md` + `RESUMO_FASE_2_1.md`
+- ✅ Testes: `test_fase_2_1.py` para validar setup
+
+**Arquivo principal modificado:**
+
+- `api/index.py` - Adicionadas 3 funções + endpoint
+
+**Como usar:**
+
+```bash
+# 1. Setup (primeira vez)
+python -m venv venv
+source venv/bin/activate  # ou venv\Scripts\activate (Windows)
+pip install -r requirements.txt
+
+# 2. Configurar .env
+cp .env.example .env
+# Editar .env com OPENAI_API_KEY
+
+# 3. Testar
+python test_fase_2_1.py
+
+# 4. Rodar servidor
+python api/index.py
+
+# 5. Testar endpoint
+curl -X POST -F "file=@relatorio.pdf" http://localhost:5000/api/analyze-pdf
 ```
 
-**Arquivo**: `api/services/openai_service.py`
+**Estrutura de resposta:**
 
-**Prompt Padrão**:
-
-```
-Você é um assistente especializado em análise de relatórios financeiros.
-Leia o PDF e extraia:
-1. Competência (mês/ano)
-2. Despesas por código de obra
-3. Aportes totais
-4. Rentabilidade
-5. Saldo final
-
-Retorne em formato JSON estruturado.
-```
-
-### 2. Processamento de PDFs com OCR
-
-```python
-# api/services/pdf_service.py
-- Ler PDF com PyPDF2
-- Extrair tabelas com pdfplumber
-- Aplicar OCR se necessário (Tesseract)
-- Normalizar dados
+```json
+{
+  "status": "success",
+  "message": "PDF analisado e salvo com sucesso",
+  "data": {
+    "competencia": "11/2025",
+    "codigo_obra": "OBR001",
+    "obra_nome": "Riviera Residências",
+    "movimentos": [
+      {
+        "tipo": "Despesa",
+        "valor": 10000.5,
+        "fonte": "Fornecedor",
+        "descricao": "..."
+      }
+    ],
+    "observacoes": "..."
+  }
+}
 ```
 
-### 3. Rateio Automático de Aportes
+**Documentação:**
 
-```python
-# api/services/rateio_service.py
-- Implementar algoritmos de rateio:
-  - Proporcional à despesa (padrão)
-  - Pesos fixos por obra
-  - Histórico
-- Validar somas (entrada = saída)
-```
+- 📖 `SETUP_FASE_2_1.md` - Guia completo com troubleshooting
+- 📖 `RESUMO_FASE_2_1.md` - Resumo executivo (leia isto primeiro!)
+- 📖 `FASE_2_PLAN.md` - Plano original (detalhes técnicos)
 
 ---
 
-## 🎯 FASE 3 - Relatórios (Semanas 3-4)
+## 🎯 FASE 2.2 - Relatórios (Próxima)
+
+### Status: 🔄 PRÓXIMA
 
 ### 1. Geração de Excel
 

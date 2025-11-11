@@ -111,6 +111,8 @@ from flask_cors import CORS
 from openai import OpenAI
 from dotenv import load_dotenv
 import gc
+import json
+import PyPDF2
 
 # Carregar variáveis de ambiente
 load_dotenv()
@@ -451,6 +453,218 @@ def atualizar_orcamento():
         return jsonify({
             'status': 'error',
             'message': str(e)
+        }), 500
+
+# ================================
+# FASE 2.1 - ANÁLISE COM OpenAI
+# ================================
+
+def extract_pdf_text(file):
+    """Extrair texto de PDF usando PyPDF2"""
+    try:
+        pdf_reader = PyPDF2.PdfReader(file)
+        text = ""
+        for page in pdf_reader.pages:
+            text += page.extract_text() + "\n"
+        return text.strip()
+    except Exception as e:
+        print(f"❌ Erro ao extrair PDF: {e}")
+        raise
+
+def analyze_with_openai(pdf_text, document_type='relatório'):
+    """Analisar texto com OpenAI GPT-4o"""
+    try:
+        api_key = os.getenv('OPENAI_API_KEY')
+        if not api_key:
+            raise ValueError("OPENAI_API_KEY não configurada no .env")
+        
+        client = OpenAI(api_key=api_key)
+        
+        prompt = f"""Você é especialista em análise de relatórios financeiros de construção (Riviera Empreendimentos).
+        
+Analise o seguinte {document_type} e extraia os dados estruturados:
+- Competência (mês/ano no formato MM/YYYY)
+- Código da obra (identificador)
+- Nome da obra
+- Tipo de movimentos (Despesa, Aporte_Rateado, Rentabilidade, Saldo_Final)
+- Valores (números em reais)
+- Fonte do movimento
+- Observações importantes
+
+Se houver tabelas, preserve todos os dados e valores. Se algo não estiver claro, indique como "Não informado".
+
+Retorne APENAS um JSON válido (sem markdown, sem explicações) com esta estrutura:
+{{
+    "competencia": "MM/YYYY",
+    "codigo_obra": "ABC123",
+    "obra_nome": "Nome da Obra",
+    "movimentos": [
+        {{"tipo": "Despesa", "valor": 1000.00, "fonte": "Fornecedor X", "descricao": "..."}},
+        {{"tipo": "Aporte_Rateado", "valor": 5000.00, "fonte": "Rateio", "descricao": "..."}}
+    ],
+    "observacoes": "..."
+}}
+
+DOCUMENTO:
+{pdf_text}"""
+        
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "Retorne APENAS JSON válido, sem markdown."
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+            temperature=0.3,
+            max_tokens=2000
+        )
+        
+        # Extrair conteúdo e fazer parse JSON
+        response_text = response.choices[0].message.content.strip()
+        
+        # Remover markdown code blocks se existirem
+        if response_text.startswith('```'):
+            response_text = response_text.split('```')[1]
+            if response_text.startswith('json'):
+                response_text = response_text[4:]
+        
+        result = json.loads(response_text)
+        return result
+    
+    except json.JSONDecodeError as e:
+        print(f"❌ Erro ao fazer parse JSON da resposta OpenAI: {e}")
+        raise ValueError(f"Resposta inválida do OpenAI: {str(e)}")
+    except Exception as e:
+        print(f"❌ Erro ao chamar OpenAI: {e}")
+        raise
+
+def save_analysis_to_db(analysis):
+    """Salvar análise no banco de dados"""
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            
+            competencia = analysis.get('competencia', 'Não informado')
+            codigo_obra = analysis.get('codigo_obra', 'Não informado')
+            obra_nome = analysis.get('obra_nome', 'Sem nome')
+            
+            # Salvar movimentos
+            movimentos = analysis.get('movimentos', [])
+            for mov in movimentos:
+                cursor.execute('''
+                    INSERT OR REPLACE INTO movimentos 
+                    (competencia, codigo_obra, obra_nome, tipo, valor, fonte)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                ''', (
+                    competencia,
+                    codigo_obra,
+                    obra_nome,
+                    mov.get('tipo', 'Outro'),
+                    float(mov.get('valor', 0)),
+                    mov.get('fonte', 'Não especificada')
+                ))
+            
+            # Salvar arquivo processado
+            cursor.execute('''
+                INSERT INTO uploads (nome_arquivo, competencia, status)
+                VALUES (?, ?, ?)
+            ''', (f"analyzed_{codigo_obra}_{competencia}", competencia, 'processado'))
+            
+            conn.commit()
+        
+        return True
+    except Exception as e:
+        print(f"❌ Erro ao salvar análise no banco: {e}")
+        raise
+
+@app.route('/api/analyze-pdf', methods=['POST'])
+def analyze_pdf_endpoint():
+    """
+    Endpoint para análise automática de PDF com OpenAI
+    
+    Request:
+        - file: PDF file (multipart/form-data)
+    
+    Response:
+        {
+            "status": "success|error",
+            "data": {...análise extraída...},
+            "message": "..."
+        }
+    """
+    try:
+        # Validar arquivo
+        if 'file' not in request.files:
+            return jsonify({
+                'status': 'error',
+                'message': 'Nenhum arquivo enviado'
+            }), 400
+        
+        file = request.files['file']
+        
+        if file.filename == '':
+            return jsonify({
+                'status': 'error',
+                'message': 'Arquivo sem nome'
+            }), 400
+        
+        if not file.filename.lower().endswith('.pdf'):
+            return jsonify({
+                'status': 'error',
+                'message': 'Apenas arquivos PDF são aceitos'
+            }), 400
+        
+        if file.content_length and file.content_length > MAX_FILE_SIZE:
+            return jsonify({
+                'status': 'error',
+                'message': 'Arquivo muito grande (máximo 50MB)'
+            }), 400
+        
+        # 1. Extrair texto do PDF
+        print(f"📄 Extraindo texto de: {file.filename}")
+        pdf_text = extract_pdf_text(file)
+        
+        if not pdf_text or len(pdf_text.strip()) < 10:
+            return jsonify({
+                'status': 'error',
+                'message': 'PDF não contém texto extraível'
+            }), 400
+        
+        print(f"✅ Texto extraído ({len(pdf_text)} caracteres)")
+        
+        # 2. Analisar com OpenAI
+        print("🤖 Analisando com OpenAI GPT-4o...")
+        analysis = analyze_with_openai(pdf_text, document_type='relatório financeiro')
+        
+        print(f"✅ Análise concluída: {analysis.get('codigo_obra')} - {analysis.get('competencia')}")
+        
+        # 3. Salvar no banco de dados
+        print("💾 Salvando no banco de dados...")
+        save_analysis_to_db(analysis)
+        
+        print("✅ Análise salva com sucesso!")
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'PDF analisado e salvo com sucesso',
+            'data': analysis
+        }), 200
+    
+    except ValueError as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 400
+    except Exception as e:
+        print(f"❌ Erro ao analisar PDF: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': f'Erro ao processar PDF: {str(e)}'
         }), 500
 
 # ================================
