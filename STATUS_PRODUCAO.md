@@ -1,63 +1,47 @@
 # ✅ PRODUÇÃO - Status & Próximos Passos
 
-**Data**: 11 Nov 2025 | **Status**: 🟢 PRONTO PARA DEPLOY
+**Data**: 11 Nov 2025 | **Status**: 🟢 PRODUÇÃO ATIVA
 
 ---
 
-## 🚀 Onde Você Está
+## 🌎 Deploys Ativos
 
-✅ **FASE 2.1 COMPLETA**: Endpoint `/api/analyze-pdf` funcional
-
-- Recebe PDFs → Extrai com PyPDF2 → Analisa com GPT-4o → Salva em SQLite
-- Código: `api/index.py` (linhas 330-450, +200 linhas)
-- Testado localmente
-
-⚠️ **FALTA**: Deploy em Vercel + Render
+- ✅ Backend (Render): https://praiassp-tools.onrender.com
+- ✅ Frontend (Vercel): https://praias-sp-tools.vercel.app
 
 ---
 
-## ⚡ PRÓXIMOS 30 MIN PARA IR AO AR
+## 🔎 Endpoints Testados
 
-### 1️⃣ Preencher `.env` (5 min)
+- GET `/api/resumo` → 200 OK
+- GET `/api/movimentos` → 200 OK
+- GET `/api/orcamento` → 200 OK
+- POST `/api/upload` (PDF) → 200 OK
 
-Copie este template e adicione suas chaves:
+---
 
-```bash
-# Abra: .env.example
-# Copie para: .env
-# Preencha:
+## 🟢 Status Atual
 
-OPENAI_API_KEY=sk-proj-[sua-chave-openai]
-FLASK_ENV=production
-FLASK_DEBUG=False
-SECRET_KEY=[gere: python -c "import secrets; print(secrets.token_hex(16))"]
-DATABASE_PATH=./data/historico_riviera.db
-UPLOAD_FOLDER=./uploads
-MAX_FILE_SIZE=52428800
-CORS_ORIGINS=https://[seu-vercel-domain].vercel.app,https://[seu-render-domain].onrender.com
-PORT=10000
-```
+- Backend e frontend integrados e funcionando
+- Upload de PDF validado (via curl e frontend)
+- CORS configurado corretamente
+- `.vercelignore` e `vercel.json` ajustados
 
-### 2️⃣ Deploy Render (Backend) - 10 min
+---
 
-1. Acesse https://render.com
-2. Clique "New" → "Web Service"
-3. Conecte repo GitHub
-4. Configuração:
-   ```
-   Name: praias-sp-tools-api
-   Runtime: Python 3.11
-   Build: pip install -r requirements.txt
-   Start: gunicorn --config gunicorn.conf.py api.index:app
-   ```
-5. Adicione Environment Variables (copie de `.env`)
-6. Deploy (automático)
+## 📋 Próximos Passos
 
-### 3️⃣ Deploy Vercel (Frontend) - 10 min
+- [ ] Testes de uso real (usuários finais)
+- [ ] Monitoramento e alertas (Sentry, uptime)
+- [ ] Otimizações de performance
+- [ ] Documentação de API e frontend
 
-1. Acesse https://vercel.com
-2. Clique "New Project"
-3. Selecione repo `PraiasSP-Tools`
+---
+
+## 📝 Histórico
+
+- 11/11/2025: Deploy finalizado, produção ativa, testes curl e frontend OK
+
 4. Adicione Environment Variable:
    ```
    REACT_APP_API_URL=https://[seu-render-domain].onrender.com

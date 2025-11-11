@@ -1,63 +1,42 @@
 # 📋 ROADMAP PRODUÇÃO - O Que Falta Implementar
 
 Data: 11 Nov 2025
-Status: **PRONTO PARA DEPLOY (Fase 2.1 ✅)**
+Status: **PRODUÇÃO ATIVA (Fase 2.1 ✅)**
 
 ---
 
-## 🎯 IMEDIATO (Próximas 24h)
-
-### [ ] 1. Deploy em Produção
+## ✅ IMEDIATO (Deploys e Testes)
 
 - [x] Preencher `.env` com chaves reais (OpenAI, Render, Vercel)
 - [x] Push para GitHub
-- [x] Conectar Render (build automático)
-- [ ] Conectar Vercel (deploy automático)
-- [ ] Testar end-to-end: Vercel → Render → OpenAI → SQLite
-- **Tempo**: ~30 min
-
-### [ ] 2. Validar em Produção
-
-- [ ] Fazer upload PDF real via Vercel
-- [ ] Verificar análise em tempo real
-- [ ] Confirmar dados salvos no banco Render
-- **Tempo**: ~10 min
+- [x] Deploy Render (backend)
+- [x] Deploy Vercel (frontend)
+- [x] Teste end-to-end: Vercel → Render → OpenAI → SQLite
+- [x] Upload PDF real via frontend
+- [x] Validação de análise e banco
 
 ---
 
 ## 📊 PRÓXIMA SEMANA (Fase 2.2)
 
-### [ ] 3. Relatórios em Excel/HTML/CSV
-
-- [ ] Endpoint `/api/generate-report` (POST)
-- [ ] Parâmetros: `format` (excel|html|csv), `filters` (competência, obra)
-- [ ] Gerar Excel com formatação (pandas + openpyxl)
-- [ ] Gerar HTML responsivo (Jinja2)
-- [ ] Gerar CSV para integração
-- [ ] Testes com dados reais
-- **Tempo**: ~8-12h
-- **Arquivo**: `api/index.py` (adicionar ~150 linhas)
-
-### [ ] 4. Botão Frontend para Relatórios
-
-- [ ] Adicionar em `templates/index.html`:
-  - Dropdown para selecionar formato (Excel/HTML/CSV)
-  - Filtros (competência, código obra)
-  - Botão "Gerar Relatório"
-- [ ] Integração com `/api/generate-report`
-- [ ] Download automático do arquivo
-- **Tempo**: ~2-3h
-- **Arquivo**: `static/app.js` + `templates/index.html`
+- [ ] Relatórios em Excel/HTML/CSV
+  - Endpoint `/api/generate-report` (POST)
+  - Parâmetros: `format` (excel|html|csv), `filters` (competência, obra)
+  - Gerar Excel com formatação (pandas + openpyxl)
+  - Gerar HTML responsivo (Jinja2)
+  - Gerar CSV para integração
+  - Testes com dados reais
+  - Botão frontend para relatórios
+  - Integração e download automático
 
 ---
 
 ## 🤖 PRÓXIMAS 2 SEMANAS (Fase 2.3)
 
-### [ ] 5. Automação com Processamento em Background
-
-- [ ] Criar tabela `analises_pendentes` (status, timestamp, erro)
-- [ ] Implementar fila de PDFs com `threading.Queue`
-- [ ] Worker thread para processar em background
+- [ ] Automação com processamento em background
+  - Tabela `analises_pendentes` (status, timestamp, erro)
+  - Fila de PDFs com `threading.Queue`
+  - Worker thread para processar em background
 - [ ] Endpoint `/api/status/{id}` para verificar progresso
 - [ ] Webhook/Email de notificação (opcional inicialmente)
 - **Tempo**: ~10-15h

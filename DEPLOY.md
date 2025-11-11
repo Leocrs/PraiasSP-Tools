@@ -2,13 +2,10 @@
 
 ## ⚡ Status Atual (Nov 11, 2025)
 
-✅ **FASE 2.1 IMPLEMENTADA**: Endpoint `/api/analyze-pdf` com OpenAI (GPT-4o)
+✅ **PRODUÇÃO ATIVA**: Backend (Render) e Frontend (Vercel) integrados
 
-- Code: `api/index.py` (linhas ~330-450)
-- Funções: `extract_pdf_text()`, `analyze_with_openai()`, `save_analysis_to_db()`
-- Banco: SQLite com tabela `movimentos` atualizada
-
-⚠️ **PENDENTE**: Deploy em Vercel + Render com todas as secrets
+- Backend: https://praiassp-tools.onrender.com
+- Frontend: https://praias-sp-tools.vercel.app
 
 ---
 
@@ -33,7 +30,7 @@ UPLOAD_FOLDER=./uploads
 MAX_FILE_SIZE=52428800
 
 # CORS
-CORS_ORIGINS=http://localhost:3000,https://yourdomain.com
+CORS_ORIGINS=https://praias-sp-tools.vercel.app,https://praiassp-tools.onrender.com
 ```
 
 ### Onde Obter as Chaves?
@@ -58,12 +55,64 @@ pip install -r requirements.txt
 # 3. Criar .env (copiar .env.example)
 cp .env.example .env
 # EDITAR .env com suas chaves
+```
+
+---
+
+## 🌎 Deploy Produção
+
+### Backend (Render)
+
+1. Conectar repo GitHub
+2. Definir env vars do `.env`
+3. Build automático
+4. Start: `gunicorn --config gunicorn.conf.py api.index:app`
+
+### Frontend (Vercel)
+
+1. Conectar repo GitHub
+2. Deploy automático
+3. `vercel.json` e `.vercelignore` já configurados
+
+---
+
+## 🧪 Testes de Produção (curl)
+
+```bash
+# Testar resumo
+curl -i https://praiassp-tools.onrender.com/api/resumo
+
+# Testar movimentos
+curl -i https://praiassp-tools.onrender.com/api/movimentos
+
+# Testar upload PDF
+curl -i https://praiassp-tools.onrender.com/api/upload -X POST -F "files=@seuarquivo.pdf"
+```
+
+---
+
+## 🛠️ Troubleshooting
+
+- 404 no Vercel: verifique se `index.html` está na raiz e `.vercelignore` não está ignorando arquivos estáticos
+- 500 no backend: veja logs do Render
+- CORS: confira se `CORS_ORIGINS` cobre ambos domínios
+
+---
+
+## 📋 Próximos Passos
+
+- [ ] Monitoramento (Sentry, uptime)
+- [ ] Otimização de performance
+- [ ] Documentação de API
 
 # 4. Rodar
+
 python api/index.py
 
 # 5. Testar
+
 curl -F "file=@relatorio.pdf" http://localhost:5000/api/analyze-pdf
+
 ```
 
 ---
@@ -73,24 +122,26 @@ curl -F "file=@relatorio.pdf" http://localhost:5000/api/analyze-pdf
 ### ✅ Endpoint Implementado
 
 ```
+
 POST /api/analyze-pdf
 
 Input: multipart/form-data (file: PDF)
 
 Output (200):
 {
-  "status": "success",
-  "message": "PDF analisado e salvo com sucesso",
-  "data": {
-    "competencia": "11/2025",
-    "codigo_obra": "OBR001",
-    "obra_nome": "Riviera",
-    "movimentos": [
-      {"tipo": "Despesa", "valor": 10000.00, "fonte": "Fornecedor", "descricao": "..."}
-    ],
-    "observacoes": "..."
-  }
+"status": "success",
+"message": "PDF analisado e salvo com sucesso",
+"data": {
+"competencia": "11/2025",
+"codigo_obra": "OBR001",
+"obra_nome": "Riviera",
+"movimentos": [
+{"tipo": "Despesa", "valor": 10000.00, "fonte": "Fornecedor", "descricao": "..."}
+],
+"observacoes": "..."
 }
+}
+
 ```
 
 ---
@@ -110,9 +161,11 @@ No Vercel Dashboard:
 
 - Settings → Environment Variables
 - Adicione:
-  ```
-  REACT_APP_API_URL=https://[seu-render-domain].onrender.com
-  ```
+```
+
+REACT_APP_API_URL=https://[seu-render-domain].onrender.com
+
+```
 
 ---
 
@@ -127,10 +180,12 @@ No Vercel Dashboard:
 ### Passo 2: Configurar
 
 ```
+
 Name: praias-sp-tools-api
 Runtime: Python 3.11
 Build Command: pip install -r requirements.txt
 Start Command: gunicorn --config gunicorn.conf.py api.index:app
+
 ```
 
 ### Passo 3: Environment Variables
@@ -138,6 +193,7 @@ Start Command: gunicorn --config gunicorn.conf.py api.index:app
 No Render Dashboard → Environment:
 
 ```
+
 OPENAI_API_KEY=sk-proj-[sua-chave]
 FLASK_ENV=production
 FLASK_DEBUG=False
@@ -147,7 +203,8 @@ UPLOAD_FOLDER=/var/data/uploads
 MAX_FILE_SIZE=52428800
 CORS_ORIGINS=https://[seu-vercel-domain].vercel.app,http://localhost:3000
 PORT=10000
-```
+
+````
 
 ### Passo 4: Deploy
 
@@ -163,7 +220,7 @@ curl https://[seu-render-domain].onrender.com/health
 
 # Resultado esperado:
 # {"status": "ok", "timestamp": "...", "service": "Riviera Ingestor"}
-```
+````
 
 ---
 
