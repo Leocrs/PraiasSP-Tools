@@ -234,6 +234,8 @@ body {
   border: 1px solid #d1d5db;
   resize: none;
   font-family: inherit;
+  min-width: 0;
+  max-width: 350px;
 }
 
 .send-button {
@@ -836,7 +838,7 @@ input[type="number"],
 input[type="date"],
 textarea,
 select {
-  width: 100%;
+  /* width removido para não afetar .message-input */
   padding: var(--spacing-md);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
@@ -860,6 +862,7 @@ select:focus {
 textarea {
   resize: vertical;
   min-height: 120px;
+  /* width removido para não afetar .message-input */
 }
 
 .file-input-wrapper {
