@@ -111,14 +111,7 @@
 .send-button:hover {
   background: #0b7a77;
 }
-.logo-header-tools {
-  display: block;
-  margin-left: 0;
-  margin-bottom: 8px;
-  width: 140px;
-  height: auto;
-  border-radius: 0;
-}
+/* Mantido apenas um bloco padronizado abaixo */
 
 body {
   font-family: Arial, sans-serif;
@@ -197,7 +190,6 @@ body {
   border: 1px solid #d1d5db;
   font-size: 1.2em;
   width: auto;
-  height: 42px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -211,11 +203,9 @@ body {
   flex: 1;
   padding: 8px;
   border-radius: 6px;
-  width: 242px;
-  height: 42px;
   border: 1px solid #d1d5db;
   resize: none;
-  font-family: Arial, sans-serif !important;
+  font-family: inherit;
 }
 
 .send-button {
@@ -543,15 +533,7 @@ body {
   gap: 0;
 }
 
-.logo-header-tools {
-  display: block;
-  margin-left: 0;
-  margin-bottom: 8px;
-  width: 140px;
-  height: auto;
-  border-radius: 0;
-  filter: none;
-}
+/* Mantido apenas um bloco padronizado abaixo */
 
 .header h1 {
   font-size: 1.2em;
@@ -567,9 +549,14 @@ body {
   margin: 0;
 }
 
+/* Mantido apenas um bloco padronizado abaixo */
 .logo-header-tools {
-  height: 70px;
-  width: auto;
+  display: block;
+  margin-left: 0;
+  margin-bottom: 8px;
+  width: 140px;
+  height: auto;
+  border-radius: 0;
 }
 
 .logo-tools {
@@ -855,23 +842,6 @@ textarea {
 
 .file-input {
   display: none;
-}
-
-.file-input-label {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-md) var(--spacing-lg);
-  background-color: var(--color-primary);
-  color: white;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: var(--transition);
-  font-weight: 600;
-}
-
-.file-input-label:hover {
-  background-color: var(--color-primary-dark);
 }
 
 /* ================================
