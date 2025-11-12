@@ -158,8 +158,8 @@
   display: block;
   margin-left: 0;
   margin-bottom: 8px;
-  width: 140px;
-  height: auto;
+  width: 354px;
+  height: 68px;
   border-radius: 0;
   font-family: Arial;
 }
@@ -181,9 +181,15 @@ body {
 }
 
 .header h1 {
-  font-size: 1.2em;
+  font-size: 23px;
   margin-bottom: 8px;
   font-family: Arial, sans-serif !important;
+  width: 784px;
+  height: 23px;
+  line-height: 23px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .chat-container {
