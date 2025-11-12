@@ -127,7 +127,7 @@ body {
 }
 
 .container {
-  max-width: 1200px;
+  max-width: 1000px;
   margin: 20px auto;
   background: #fff;
   border-radius: 8px;
@@ -230,8 +230,8 @@ body {
 }
 
 .message-input {
-  flex: 1;
-  padding: 6px 10px;
+  width: 320px;
+  padding: 8px;
   border-radius: 6px;
   border: 1px solid #d1d5db;
   resize: none;
