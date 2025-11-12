@@ -128,11 +128,11 @@ body {
 
 .container {
   max-width: 1000px;
-  margin: 40px auto 40px auto;
+  margin: 20px auto;
   background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.1);
-  padding: 40px 36px 36px 36px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  padding: 32px;
   min-height: 80vh;
   display: flex;
   flex-direction: column;
@@ -235,7 +235,6 @@ body {
   resize: none;
   font-family: inherit;
   min-width: 0;
-  max-width: 250px;
 }
 
 .send-button {
