@@ -158,8 +158,8 @@
   display: block;
   margin-left: 0;
   margin-bottom: 8px;
-  width: 784px;
-  height: 63px;
+  width: 140px;
+  height: auto;
   border-radius: 0;
   font-family: Arial, sans-serif !important;
 }
@@ -181,15 +181,9 @@ body {
 }
 
 .header h1 {
-  font-size: 23px;
+  font-size: 1.2em;
   margin-bottom: 8px;
   font-family: Arial, sans-serif !important;
-  width: 784px;
-  height: 23px;
-  line-height: 23px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .chat-container {
@@ -247,9 +241,8 @@ body {
   cursor: pointer;
   border: 1px solid #d1d5db;
   font-size: 1.2em;
-  font-family: Arial, sans-serif !important;
-  width: 1511px;
-  height: 925px;
+  width: auto;
+  height: auto;
 }
 
 .file-input {
