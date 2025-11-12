@@ -217,12 +217,13 @@ body {
 }
 
 .message-input {
-  flex: 1;
-  padding: 8px;
-  border-radius: 6px;
-  border: 1px solid #d1d5db;
-  resize: none;
-  font-family: inherit;
+  flex: 1 !important;
+  padding: 8px !important;
+  border-radius: 6px !important;
+  border: 1px solid #d1d5db !important;
+  resize: none !important;
+  font-family: inherit !important;
+  min-height: unset !important;
 }
 
 .send-button {
