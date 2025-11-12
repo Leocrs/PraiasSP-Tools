@@ -127,7 +127,7 @@ body {
 }
 
 .container {
-  max-width: 1000px;
+  max-width: 1200px;
   margin: 20px auto;
   background: #fff;
   border-radius: 8px;
@@ -236,7 +236,6 @@ body {
   border: 1px solid #d1d5db;
   resize: none;
   font-family: inherit;
-  height: 32px;
   box-sizing: border-box;
   font-size: 0.95em;
   line-height: 1.2;
