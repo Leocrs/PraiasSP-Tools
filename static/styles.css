@@ -127,7 +127,7 @@ body {
 }
 
 .container {
-  max-width: 1000px;
+  max-width: 1200px;
   margin: 20px auto;
   background: #fff;
   border-radius: 8px;
@@ -439,42 +439,7 @@ body {
   height: auto !important;
   text-align: left !important;
 }
-.config-toggle {
-  position: fixed;
-  top: 24px;
-  right: 24px;
-  background: #10b981;
-  color: #fff;
-  border: none;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  font-size: 1.5em;
-  cursor: pointer;
-  z-index: 10;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-}
 
-.config-toggle:hover {
-  background: #059669;
-}
-
-.config-panel {
-  position: fixed;
-  top: 70px;
-  right: 24px;
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
-  padding: 20px;
-  width: 260px;
-  display: none;
-  z-index: 20;
-}
-
-.config-panel.open {
-  display: block;
-}
 /* ================================
    PRAIAS SP TOOLS - RIVIERA INGESTOR
    Identidade Visual Verde - Tools
