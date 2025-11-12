@@ -235,7 +235,7 @@ body {
   resize: none;
   font-family: inherit;
   min-width: 0;
-  max-width: 350px;
+  max-width: 250px;
 }
 
 .send-button {
