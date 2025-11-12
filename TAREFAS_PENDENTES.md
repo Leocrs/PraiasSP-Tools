@@ -14,6 +14,10 @@ Status: **PRODUÇÃO ATIVA (Fase 2.1 ✅)**
 - [x] Teste end-to-end: Vercel → Render → OpenAI → SQLite
 - [x] Upload PDF real via frontend
 - [x] Validação de análise e banco
+- [x] Placeholder do campo de mensagem corrigido
+- [x] CSS do campo de mensagem
+- [x] Deploy servindo arquivo correto (index.html)
+- [x] Override de regras globais de CSS para input
 
 ---
 
@@ -145,16 +149,16 @@ Fase 2.5 (Testes)
 
 ## ✅ Checklist Pre-Deployment
 
-- [ ] `.env` preenchido com chaves reais
-- [ ] `api/index.py` testado localmente
-- [ ] SQLite tem dados de teste
-- [ ] Vercel domain configurado
-- [ ] Render domain configurado
-- [ ] CORS_ORIGINS atualizado em `.env`
-- [ ] `requirements.txt` tem todas dependências
-- [ ] `gunicorn.conf.py` está correto
-- [ ] `Procfile` aponta para arquivo certo
-- [ ] `runtime.txt` com Python 3.11
+- [x] `.env` preenchido com chaves reais
+- [x] `api/index.py` testado localmente
+- [x] SQLite tem dados de teste
+- [x] Vercel domain configurado
+- [x] Render domain configurado
+- [x] CORS_ORIGINS atualizado em `.env`
+- [x] `requirements.txt` tem todas dependências
+- [x] `gunicorn.conf.py` está correto
+- [x] `Procfile` aponta para arquivo certo
+- [x] `runtime.txt` com Python 3.11
 
 ---
 

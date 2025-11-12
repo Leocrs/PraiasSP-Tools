@@ -29,7 +29,16 @@
 
 ---
 
-## 📋 Próximos Passos
+## �️ Histórico de Correções
+
+- Correção do placeholder do campo de mensagem para "Digite sua mensagem..."
+- Ajuste do CSS para o campo de mensagem ficar idêntico ao sistema de referência (altura e largura)
+- Override de regras globais de CSS para o input de mensagem (min-height, padding, etc)
+- Remoção de duplicidade de arquivos index.html e deploy servindo o arquivo correto
+
+---
+
+## �📋 Próximos Passos
 
 - [ ] Testes de uso real (usuários finais)
 - [ ] Monitoramento e alertas (Sentry, uptime)
