@@ -601,7 +601,11 @@
         messageDiv.id = messageId;
         messageDiv.innerHTML = `
           <div class="avatar ${sender}">
-            ${sender === "user" ? "👤" : "🤖"}
+            ${
+              sender === "user"
+                ? "<img src='static/tools-avatar-sem-fundo.png' alt='Logo Tools' class='logo-tools-avatar'/>"
+                : "<span class='robot-emoji'>🤖</span>"
+            }
           </div>
           <div class="message-content">${content}</div>
         `;

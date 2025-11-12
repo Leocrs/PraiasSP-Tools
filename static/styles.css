@@ -178,6 +178,24 @@ body {
   border-radius: 6px;
   max-width: 80%;
   line-height: 1.4;
+  color: #222;
+  font-size: 1.05em;
+}
+
+.message-content strong {
+  font-weight: 700 !important;
+  color: #111 !important;
+}
+
+.message-content b {
+  font-weight: 700 !important;
+  color: #111 !important;
+}
+
+.message-content .instruction-title,
+.message-content .instruction-section {
+  font-weight: 700;
+  color: #111;
 }
 
 .input-container {
