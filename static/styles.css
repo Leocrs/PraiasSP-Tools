@@ -508,7 +508,7 @@ body {
 .container {
   max-width: 1000px;
   margin: 0 auto;
-  padding: var(--spacing-lg);
+  padding: 32px;
 }
 
 .container-fluid {
@@ -1054,7 +1054,7 @@ pre code {
 }
 
 .flex {
-  display: flex;
+  max-width: 400px;
   gap: var(--spacing-md);
 }
 
