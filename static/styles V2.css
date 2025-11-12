@@ -51,7 +51,6 @@
   align-items: center;
   gap: 5px;
   transition: background 0.2s, box-shadow 0.2s;
-  font-family: Arial;
 }
 
 .export-button:hover {
@@ -64,7 +63,6 @@
 #consultarHistorico {
   background: #10b981 !important;
   color: white !important;
-  font-family: Arial;
 }
 
 #consultarHistorico:hover {
@@ -147,7 +145,6 @@
   padding: 8px 16px;
   cursor: pointer;
   font-size: 1em;
-  font-family: Arial;
 }
 
 .send-button:hover {
@@ -161,11 +158,10 @@
   width: 140px;
   height: auto;
   border-radius: 0;
-  font-family: Arial;
 }
 
 body {
-  font-family: Arial, sans-serif !important;
+  font-family: Arial, sans-serif;
   background: #f6f8fa;
   margin: 0;
   padding: 0;
@@ -183,7 +179,6 @@ body {
 .header h1 {
   font-size: 1.2em;
   margin-bottom: 8px;
-  font-family: Arial, sans-serif !important;
 }
 
 .chat-container {
@@ -241,7 +236,6 @@ body {
   cursor: pointer;
   border: 1px solid #d1d5db;
   font-size: 1.2em;
-  font-family: Arial, sans-serif !important;
 }
 
 .file-input {
@@ -254,7 +248,7 @@ body {
   border-radius: 6px;
   border: 1px solid #d1d5db;
   resize: none;
-  font-family: Arial, sans-serif !important;
+  font-family: inherit;
 }
 
 .send-button {
@@ -265,7 +259,6 @@ body {
   padding: 8px 12px;
   cursor: pointer;
   font-size: 1.1em;
-  font-family: Arial, sans-serif !important;
 }
 /* Ícone do botão de envio */
 .send-icon {
@@ -311,7 +304,6 @@ body {
   font-size: 1.2em;
   cursor: pointer;
   padding: 4px;
-  font-family: Arial, sans-serif !important;
 }
 
 .remove-file:hover {
