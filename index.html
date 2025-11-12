@@ -207,21 +207,37 @@
         carregarBaseHistorica();
 
         setTimeout(() => {
-          const welcomeMessage = `🎯 <strong style='color: #000; font-weight: bold;'>BEM-VINDO AO PRAIASSP TOOLS</strong><br><br>
-          👋 Olá! Estou pronto para analisar seus documentos PDF e planilhas Excel.<br><br>
-          ✨ <strong>O que posso fazer:</strong><br>
-          • Extrair informações de PDFs e arquivos Excel<br>
-          • Comparar dados entre múltiplos documentos<br>
-          • Gerar análises detalhadas com IA<br>
-          • Exportar resultados em Excel ou PDF<br>
-          • Manter histórico de análises<br><br>
-          🚀 <strong>Como começar:</strong><br>
-          <strong style='color: #e74c3c'>👉 Clique em 📎 para anexar seus documentos (PDF ou Excel)</strong><br>
-          Digite uma pergunta ou comando de análise e pressione ➤<br><br>
-          <strong>Status:</strong><br>
-          • Banco de histórico: <strong>${baseHistorica.length} análises</strong><br>
-          • Sistema: <strong>✅ Operacional</strong><br><br>
-          ⏱️ Comece anexando seus documentos!`;
+          const welcomeMessage = `🎯 <strong>BEM-VINDO AO SISTEMA DE ANÁLISE DE DOCUMENTOS - PRAIASSP TOOLS</strong><br><br>
+
+👋 Olá! Estou pronto para analisar seus documentos PDF e planilhas Excel e gerar análises comparativas.<br><br>
+
+✨ <strong>O que posso fazer:</strong><br>
+• Extrair informações de PDFs e arquivos Excel<br>
+• Comparar dados entre múltiplos documentos<br>
+• Gerar análises detalhadas com IA<br>
+• Exportar resultados em Excel ou PDF<br>
+• Manter histórico de análises<br><br>
+
+� <strong>Como começar:</strong><br>
+<strong style='color: #e74c3c; font-size: 16px'>👉 Anexe pelo menos 2 documentos</strong> (PDFs ou planilhas Excel):<br><br>
+<table border='1' style='border-collapse:collapse;font-size:13px;margin:10px 0;width:100%'>
+<tr style='background:#0e938f;color:white'><th>Clique em 📎</th><th>Selecione os arquivos</th><th>Envie sua mensagem</th></tr>
+<tr style='background:#f8f9fa'><td style='text-align:center'>Anexar</td><td>Seus PDFs/XLS com dados</td><td>Depois digite "Analisar" ou só pressione ➤</td></tr>
+</table><br>
+
+💡 <strong>Exemplo do que você receberá:</strong><br>
+<table border='1' style='border-collapse:collapse;font-size:12px;margin:10px 0;width:100%'>
+<tr style='background:#0e938f;color:white'><th>Item</th><th>Documento 1</th><th>Documento 2</th><th>Melhor Dado</th></tr>
+<tr><td>Exemplo A</td><td style='background:#ffcccc'>R$ 50.000</td><td style='background:#ccffcc'><strong>R$ 45.000</strong></td><td>2 (10% economia)</td></tr>
+<tr><td>Exemplo B</td><td style='background:#ccffcc'><strong>R$ 10.000</strong></td><td style='background:#ffcccc'>R$ 12.000</td><td>1 (17% economia)</td></tr>
+<tr style='background:#f0f0f0'><td><strong>TOTAL</strong></td><td style='background:#ffe6e6'><strong>R$ 60.000</strong></td><td style='background:#e6ffe6'><strong>R$ 57.000</strong></td><td>2 (5% economia)</td></tr>
+</table><br>
+
+<strong>Status:</strong><br>
+• Banco de histórico: <strong>${baseHistorica.length} análises</strong><br>
+• Sistema: <strong>✅ Operacional</strong><br><br>
+
+⏱️ Comece anexando seus documentos!`;
 
           addMessage("assistant", welcomeMessage);
         }, 500);
