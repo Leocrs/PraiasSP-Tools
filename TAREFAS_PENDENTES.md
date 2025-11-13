@@ -46,133 +46,162 @@ Projeto: Riviera - Prestações de Contas Automáticas
 
 ---
 
-## 🤖 PRÓXIMAS 2 SEMANAS (Fase 2.3)
+### 2. **HTML Relatório Executivo** (CRÍTICO - 2-3h)
 
-- [ ] Automação com processamento em background
-  - Tabela `analises_pendentes` (status, timestamp, erro)
-  - Fila de PDFs com `threading.Queue`
-  - Worker thread para processar em background
-- [ ] Endpoint `/api/status/{id}` para verificar progresso
-- [ ] Webhook/Email de notificação (opcional inicialmente)
-- **Tempo**: ~10-15h
-- **Arquivo**: `api/index.py` (adicionar ~200 linhas) + `api/worker.py` (novo)
+**Conforme especificação**:
 
----
+- Arquivo: `Riviera_Relatorio_YYYY-MM.html`
+- Cards com números destacados (saldos, despesas, aportes)
+- Tabelas comparativas executivas
+- Layout responsivo (pronto para imprimir)
+- Endpoint: `/api/export-html` (POST)
 
-## 🔐 PRÓXIMAS 3 SEMANAS (Fase 2.4)
-
-### [ ] 6. Autenticação & Multi-tenancy
-
-- [ ] Criar tabelas: `usuarios`, `organizacoes`, `tokens_revogados`
-- [ ] Endpoint `/api/auth/login` (JWT)
-- [ ] Endpoint `/api/auth/logout`
-- [ ] Middleware `@jwt_required()` em todos endpoints
-- [ ] Isolamento de dados: usuário vê apenas seus dados
-- [ ] Suporte a múltiplas obras por organização
-- **Tempo**: ~12-15h
-- **Arquivo**: `api/index.py` + `api/auth.py` (novo)
+**Status**: 0% (endpoint não existe)  
+**Bloqueador**: Nenhum (pode fazer agora)
 
 ---
 
-## 🧪 PRÓXIMAS 4 SEMANAS (Fase 2.5)
+### 3. **Interface de Parâmetros** (IMPORTANTE - 1-2h)
 
-### [ ] 7. Testes & Otimizações
+**Conforme especificação**: "Configurável via aba parâmetros"
 
-- [ ] Testes E2E com PDFs reais (Mac Vidros, Marvidros, etc)
-- [ ] Performance test (1000+ movimentos)
-- [ ] Teste de segurança (SQL injection, XSS)
-- [ ] Backup automático do banco
-- [ ] Monitoramento de errors (Sentry ou similar)
-- **Tempo**: ~10-12h
+**Necessário**:
 
----
+- Formulário no frontend para ajustar:
+  - Modelo IA (GPT-4 / GPT-5)
+  - max_tokens
+  - Taxa de rateio
+  - Adicionar/editar obras
+- Salvar em BD (`configuracoes` table)
 
-## 🚨 CRÍTICO (Anytime)
-
-### [ ] 8. Bugs/Fixes Descobertos
-
-- Listar aqui conforme descobrir na produção
-- Priorizar por impacto × urgência
+**Status**: 50% (dados no BD, falta UI)  
+**Bloqueador**: Nenhum
 
 ---
 
-## 📊 Progresso Geral
+### 4. **Visual do Dashboard** (IMPORTANTE - 2-3h)
 
-```
-FASE 1: MVP Base                    ✅ 100%
-FASE 2.1: OpenAI Integration        ✅ 100%
-FASE 2.2: Relatórios               📅 Próxima semana
-FASE 2.3: Automação                📅 Próximas 2 semanas
-FASE 2.4: Segurança/Auth           📅 Próximas 3 semanas
-FASE 2.5: Testes & Otimizações     📅 Próximas 4 semanas
-```
+**Conforme especificação**: Deve parecer relatório executivo, não lista
 
----
+**Problema atual**:
 
-## 💼 Estimativa Total
+- Mostra tabelas básicas
+- Parece lista simples, não profissional
+- Falta destaque nos números
 
-| Fase      | Horas         | Data Estimada |
-| --------- | ------------- | ------------- |
-| 2.1       | ✅ 0 (pronto) | ✅ Nov 11     |
-| 2.2       | 10-15h        | Nov 18        |
-| 2.3       | 12-18h        | Nov 25        |
-| 2.4       | 12-18h        | Dec 2         |
-| 2.5       | 10-12h        | Dec 9         |
-| **Total** | **44-63h**    | **~1 mês**    |
+**Necessário**:
+
+- Cards com números grandes
+- Cores + visual atrativo
+- Layout grid profissional
+- Ícones e espaçamento melhor
+
+**Status**: 20% (tabelas existem, visual precário)  
+**Bloqueador**: Nenhum
 
 ---
 
-## 🔗 Dependências Entre Tarefas
+## ⚠️ COM ERRO / NÃO TESTADO
 
-```
-Deploy Produção (imediato)
-    ↓
-Fase 2.2 (Relatórios) ← requer dados em produção
-    ↓
-Fase 2.3 (Automação) ← requer relatórios prontos
-    ↓
-Fase 2.4 (Auth) ← pode ser paralelo
-    ↓
-Fase 2.5 (Testes)
-```
+### Rateio de Aportes - Implementado mas Não Validado
+
+**Status**: Seção 7 do prompt pronta, validate_aportes_pool() existe
+
+**Implementado**:
+
+- Prompt tem fórmula: taxa_rateio = despesas_obra / total_despesas
+- Exemplo: Obra 616: R$ 5.483.433,37 × 0.001129 = R$ 61,87
+- Função validação: validate_aportes_pool()
+
+**Problema**: Nunca testou com 3 PDFs reais em produção
+
+- Não sabe se GPT-5 retorna estrutura JSON correta
+- Não sabe se campo aportes_pool vem no response
+
+**Teste necessário** (30 min):
+
+1. Deploy em Render
+2. Upload 3 PDFs via Vercel
+3. Verificar logs: "aportes_pool found" ✅ OU "NOT found" ❌
+4. Se ✅ → Pronto
+5. Se ❌ → 2-3h para ajustar prompt/parsing
+
+**Status**: 50% (implementado, não validado)  
+**Bloqueador**: Nenhum (teste rápido)
 
 ---
 
-## 📌 Notas Importantes
+### Dashboard Visual - Básico, Não Executivo
 
-1. **Banco SQLite em Render (Free tier)**
+**Status**: Mostra tabelas, mas parece lista simples
+
+**Problema**:
+
+- Sem cards destacados
+- Sem visual profissional
+- Números não saltam aos olhos
+- Parece protótipo, não saída final
+
+**Precisa**: 2-3h de CSS + layout (já listado acima como item 4)
+
+---
+
+## 📊 RESUMO EXECUTIVO
+
+| O que               | Status      | Horas        | Bloqueador |
+| ------------------- | ----------- | ------------ | ---------- |
+| ✅ Análise GPT-5    | Pronto 100% | —            | Nenhum     |
+| ✅ Extração dados   | Pronto 100% | —            | Nenhum     |
+| ✅ API funcionando  | Pronto 100% | —            | Nenhum     |
+| ❌ Excel export     | 0%          | 3-4h         | Nenhum     |
+| ❌ HTML export      | 0%          | 2-3h         | Nenhum     |
+| ❌ Interface config | 50%         | 1-2h         | Nenhum     |
+| ❌ Visual dashboard | 20%         | 2-3h         | Nenhum     |
+| ⚠️ Rateio validado  | 50%         | 0.5h (teste) | Nenhum     |
+
+**Total pendente**: ~11-15h
+
+---
+
+## 🗓️ PRÓXIMAS SEMANAS (Proposta)
+
+**Semana 1 (15-20 Nov)**: Excel + HTML + Validar Rateio
+
+- [ ] Excel endpoint (3-4h)
+- [ ] HTML endpoint (2-3h)
+- [ ] Testar rateio com 3 PDFs (0.5h)
+
+**Semana 2 (22-27 Nov)**: Visual + Config
+
+- [ ] Melhorar visual dashboard (2-3h)
+- [ ] Interface de parâmetros (1-2h)
+
+**Semana 3+ (29 Nov+)**: Itens futuros
+
+- [ ] PostgreSQL para persistência
+- [ ] Autenticação/Multi-tenancy
+- [ ] Testes E2E
+
+---
+
+## 📌 NOTAS IMPORTANTES
+
+1. **SQLite em Render (Free tier)**
 
    - ⚠️ Dados não persistem após redeploy
-   - Solução: Migrar para PostgreSQL se precisar dados permanentes
+   - Solução: Migrar para PostgreSQL quando virar recorrente
 
-2. **OpenAI Costs**
+2. **Custos OpenAI**
 
-   - GPT-4o: ~$0.01-0.02 por request
+   - GPT-5 Responses API: ~$0.01-0.02 por request
    - Estimativa: ~$5-20/mês com uso normal
-   - Defina limites de taxa no Render
+   - Defina rate limits no `.env`
 
-3. **Vercel + Render (Free tiers)**
+3. **Plataformas (Free tiers)**
+
    - Vercel: 100GB bandwidth/mês (suficiente)
-   - Render: 750h/mês (suficiente para aplicação leve)
-   - Upgrade se precisar de mais
+   - Render: 750h/mês (suficiente)
+   - Upgrade quando precisar
 
----
-
-## ✅ Checklist Pre-Deployment
-
-- [x] `.env` preenchido com chaves reais
-- [x] `api/index.py` testado localmente
-- [x] SQLite tem dados de teste
-- [x] Vercel domain configurado
-- [x] Render domain configurado
-- [x] CORS_ORIGINS atualizado em `.env`
-- [x] `requirements.txt` tem todas dependências
-- [x] `gunicorn.conf.py` está correto
-- [x] `Procfile` aponta para arquivo certo
-- [x] `runtime.txt` com Python 3.11
-
----
-
-**Próximo Passo**: Execute as tarefas de "IMEDIATO" para ter em produção hoje!
-
-Qualquer bloqueador, me avisa! 🚀
+4. **Próxima Ação**: Fazer Excel → HTML → Testar rateio
+   - Isso torna o sistema 100% funcional conforme especificação
