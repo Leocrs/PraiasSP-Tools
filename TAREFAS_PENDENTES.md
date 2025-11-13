@@ -180,7 +180,7 @@ Projeto: Riviera - Prestações de Contas Automáticas
 
 - [ ] PostgreSQL para persistência
 - [ ] Autenticação/Multi-tenancy
-- [ ] Testes E2E
+- [ ] Testes
 
 ---
 
