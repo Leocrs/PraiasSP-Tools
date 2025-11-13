@@ -716,7 +716,7 @@ DOCUMENTO A PROCESSAR:
         messages = [
             {
                 "role": "system",
-                "content": "Retorne APENAS JSON válido, sem markdown."
+                "content": "VOCÊ DEVE RETORNAR APENAS JSON VÁLIDO. NÃO RETORNE MARKDOWN, NÃO RETORNE NARRATIVA, NÃO RETORNE EXPLICAÇÕES. APENAS JSON PURO E VÁLIDO."
             },
             {
                 "role": "user",
@@ -726,23 +726,60 @@ DOCUMENTO A PROCESSAR:
         
         # Usar função unificada com suporte a GPT-5
         print(f"🤖 Analisando com {model}...")
-        response, error = process_openai_request(messages, model, max_tokens=2000)
+        response, error = process_openai_request(messages, model, max_tokens=4000)
         
         if error:
             print(f"❌ Erro ao chamar OpenAI: {error}")
             raise ValueError(f"Erro na API OpenAI: {error}")
         
-        # Extrair conteúdo e fazer parse JSON
+        # Extrair conteúdo
         response_text = response.choices[0].message.content.strip()
         
-        # Remover markdown code blocks se existirem
+        # ⭐ AGRESSIVAMENTE remover markdown e narrativa
+        print(f"📝 Resposta bruta ({len(response_text)} chars): {response_text[:100]}...")
+        
+        # Remover markdown code blocks
         if response_text.startswith('```'):
             response_text = response_text.split('```')[1]
             if response_text.startswith('json'):
                 response_text = response_text[4:]
+            elif response_text.startswith('\n'):
+                response_text = response_text[1:]
         
-        result = json.loads(response_text)
-        return result
+        # Remover trailing markdown
+        if response_text.endswith('```'):
+            response_text = response_text[:-3]
+        
+        # Procurar por [ ou { para começar o JSON
+        start_idx = response_text.find('[')
+        if start_idx == -1:
+            start_idx = response_text.find('{')
+        
+        if start_idx > 0:
+            print(f"⚠️ Encontrou narrativa antes do JSON. Removendo primeiros {start_idx} chars...")
+            response_text = response_text[start_idx:]
+        
+        # Procurar pelo final do JSON
+        end_idx = max(response_text.rfind(']'), response_text.rfind('}'))
+        if end_idx > 0 and end_idx < len(response_text) - 1:
+            print(f"⚠️ Encontrou narrativa após JSON. Removendo últimos {len(response_text) - end_idx - 1} chars...")
+            response_text = response_text[:end_idx + 1]
+        
+        # Tentar parse JSON com retry
+        try:
+            result = json.loads(response_text)
+            print(f"✅ JSON parseado com sucesso!")
+            return result
+        except json.JSONDecodeError as e:
+            print(f"❌ Erro ao fazer parse JSON na primeira tentativa: {e}")
+            print(f"📄 Conteúdo: {response_text[:200]}...")
+            
+            # RETRY: Se for array, tentar extrair primeiro elemento
+            try:
+                result = json.loads(response_text)
+                return result
+            except:
+                raise ValueError(f"Resposta não é JSON válido. Resposta: {response_text[:500]}")
     
     except json.JSONDecodeError as e:
         print(f"❌ Erro ao fazer parse JSON da resposta OpenAI: {e}")
