@@ -938,12 +938,12 @@ def chat_endpoint():
     
     Request (JSON):
         {
-            "model": "gpt-4o" (ou "gpt-5", "gpt-4", "gpt-3.5-turbo"),
+            "model": "gpt-5" (ou "gpt-4o", "gpt-4", "gpt-3.5-turbo"),
             "messages": [
                 {"role": "system", "content": "..."},
                 {"role": "user", "content": "..."}
             ],
-            "max_tokens": 2000
+            "max_tokens": 6000
         }
     
     Response:
@@ -954,45 +954,95 @@ def chat_endpoint():
                 }
             }],
             "model": "modelo usado",
-            "tokens_info": {...}
+            "processing_time": 1.23
         }
     """
+    start_time = time.time()
+    
     try:
         data = request.json
         
+        # Validação 1: Requisição vazia
         if not data:
             return jsonify({
                 'error': 'Requisição vazia'
             }), 400
         
-        model = data.get('model', 'gpt-4o')
+        model = data.get('model', 'gpt-5')
         messages = data.get('messages', [])
-        max_tokens = data.get('max_tokens', 2000)
         
-        # Validar modelo
+        # Validação 2: Mensagens vazias
+        if not messages:
+            return jsonify({
+                'error': 'Nenhuma mensagem fornecida'
+            }), 400
+        
+        # Validação 3: Limitar tamanho do prompt
+        messages_str = str(messages)
+        if len(messages_str) > 50000:
+            return jsonify({
+                'error': 'Prompt muito longo. Máximo 50k caracteres.'
+            }), 400
+        
+        # Validação 4: Modelo suportado
         modelos_suportados = ['gpt-5', 'gpt-4o', 'gpt-4', 'gpt-3.5-turbo']
         if model not in modelos_suportados:
-            model = 'gpt-4o'
-            print(f"⚠️ Modelo inválido. Usando padrão: {model}")
+            print(f"⚠️ Modelo '{model}' não suportado. Usando padrão: gpt-5")
+            model = 'gpt-5'
         
-        print(f"💬 Chat endpoint chamado")
-        print(f"   Modelo: {model}")
-        print(f"   Mensagens: {len(messages)}")
-        print(f"   Max tokens: {max_tokens}")
+        # CRÍTICO: Limites por modelo (GPT-5 pode usar até 12k tokens)
+        if model.startswith('gpt-5'):
+            max_tokens = min(data.get('max_tokens', 6000), 12000)  # GPT-5: até 12k
+        else:
+            max_tokens = min(data.get('max_tokens', 2000), 4000)   # Outros: até 4k
+        
+        # Logging estruturado
+        print("\n" + "="*60)
+        print("🚀 === NOVA REQUISIÇÃO DE ANÁLISE ===")
+        print(f"📧 Modelo: {model}")
+        print(f"🔢 Max Tokens: {max_tokens}")
+        print(f"📝 Total de mensagens: {len(messages)}")
+        print(f"📄 Tamanho do prompt: {len(messages_str)} caracteres")
+        print("="*60)
         
         # Chamar process_openai_request
         response, error = process_openai_request(messages, model, max_tokens)
         
+        # Validação 5: Erro na API OpenAI
         if error:
-            print(f"❌ Erro ao processar requisição: {error}")
+            print(f"❌ ERRO na API OpenAI: {error}")
             return jsonify({
-                'error': error
+                'error': f'Erro na API OpenAI: {error}'
             }), 500
         
-        # Formatar resposta compatível com frontend
-        content = response.choices[0].message.content
+        # Validação 6: Response nulo
+        if not response:
+            print("❌ Response é None!")
+            return jsonify({
+                'error': 'Resposta nula da OpenAI'
+            }), 500
         
-        print(f"✅ Resposta gerada ({len(content)} chars)")
+        # Validação 7: Choices vazio
+        if not response.choices:
+            print("❌ Response.choices vazio!")
+            return jsonify({
+                'error': 'Resposta vazia da OpenAI (choices vazio)'
+            }), 500
+        
+        # Validação 8: Content vazio ou None
+        content = response.choices[0].message.content
+        if not content:
+            print("⚠️ WARNING: Content é None ou vazio!")
+            print(f"   Finish reason: {response.choices[0].finish_reason}")
+            content = "(Resposta vazia recebida da OpenAI)"
+        
+        processing_time = time.time() - start_time
+        
+        # Logging de sucesso
+        print("✅ Resposta da OpenAI recebida com sucesso!")
+        print(f"📄 Tamanho da resposta: {len(content)} caracteres")
+        print(f"⏱️ Tempo de processamento: {processing_time:.2f}s")
+        print("="*60 + "\n")
         
         return jsonify({
             'choices': [{
@@ -1001,17 +1051,64 @@ def chat_endpoint():
                 }
             }],
             'model': model,
-            'tokens_info': {
-                'max_tokens': max_tokens
+            'processing_time': round(processing_time, 2)
+        }), 200
+    
+    except Exception as e:
+        processing_time = time.time() - start_time
+        error_msg = f"Erro interno: {str(e)}"
+        print(f"❌ ERRO GERAL: {error_msg}")
+        print(f"⏱️ Tempo até erro: {processing_time:.2f}s")
+        print("="*60 + "\n")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'error': error_msg
+        }), 500
+
+# ================================
+# ROTAS - HEALTH & STATUS
+# ================================
+
+@app.route('/api/health', methods=['GET'])
+def health():
+    """Health check endpoint com informações detalhadas"""
+    try:
+        # Testar conexão com banco
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT COUNT(*) FROM movimentos')
+            total_movimentos = cursor.fetchone()[0]
+            cursor.execute('SELECT COUNT(*) FROM uploads')
+            total_uploads = cursor.fetchone()[0]
+        
+        return jsonify({
+            'status': 'ok',
+            'service': 'PraiasSP-Tools API',
+            'timestamp': datetime.now().isoformat(),
+            'openai_configured': bool(os.getenv('OPENAI_API_KEY')),
+            'database': {
+                'status': 'working',
+                'total_movimentos': total_movimentos,
+                'total_uploads': total_uploads
+            },
+            'configuration': {
+                'request_timeout_seconds': REQUEST_TIMEOUT,
+                'openai_timeout_seconds': OPENAI_TIMEOUT,
+                'max_file_size_mb': MAX_FILE_SIZE / (1024 * 1024)
             }
         }), 200
     
     except Exception as e:
-        print(f"❌ Erro no endpoint /api/chat: {type(e).__name__}: {str(e)}")
-        import traceback
-        traceback.print_exc()
         return jsonify({
-            'error': str(e)
+            'status': 'error',
+            'service': 'PraiasSP-Tools API',
+            'timestamp': datetime.now().isoformat(),
+            'openai_configured': bool(os.getenv('OPENAI_API_KEY')),
+            'database': {
+                'status': 'error',
+                'error': str(e)
+            }
         }), 500
 
 # ================================
