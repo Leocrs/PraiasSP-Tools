@@ -168,17 +168,8 @@ signal.signal(signal.SIGTERM, signal_handler)
 signal.signal(signal.SIGINT, signal_handler)
 
 # ================================
-# ROTAS - HEALTH CHECK
+# ROTAS - INDEX
 # ================================
-
-@app.route('/health', methods=['GET'])
-def health():
-    """Health check da API"""
-    return jsonify({
-        'status': 'ok',
-        'timestamp': datetime.now().isoformat(),
-        'service': 'Riviera Ingestor'
-    }), 200
 
 @app.route('/', methods=['GET', 'HEAD'])
 def index():
