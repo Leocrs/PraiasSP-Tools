@@ -554,11 +554,17 @@
           { role: "user", content: userMessage },
         ];
 
-        // URL do backend Render (não usar window.location.origin pois aponta para Vercel)
-        const backendUrl =
-          "https://praiassp-tools.onrender.com/api/analyze-pdf";
+        // URL do backend Render (endpoint /api/chat para requisições JSON)
+        const backendUrl = "https://praiassp-tools.onrender.com/api/chat";
 
         try {
+          console.log("📡 POST:", backendUrl);
+          console.log("📦 Payload:", {
+            model,
+            messages: messages.length + " mensagens",
+            max_tokens: maxTokens,
+          });
+
           const response = await fetch(backendUrl, {
             method: "POST",
             headers: {
@@ -571,15 +577,25 @@
             }),
           });
 
+          console.log("📡 Status da resposta:", response.status);
+
           if (!response.ok) {
             const error = await response.json();
+            console.error("❌ Erro da API:", error);
             throw new Error(error.error || "Erro na API do backend");
           }
 
           const data = await response.json();
-          return (
-            data.choices[0].message.content || data.analysis || data.message
+          console.log("✅ Dados recebidos do backend");
+          console.log(
+            "📄 Tamanho da resposta:",
+            data.choices[0].message.content.length,
+            "caracteres"
           );
+          if (data.tokens_info) {
+            console.log("📊 Informações de tokens:", data.tokens_info);
+          }
+          return data.choices[0].message.content;
         } catch (error) {
           console.error("❌ Erro ao chamar backend:", error);
           throw error;

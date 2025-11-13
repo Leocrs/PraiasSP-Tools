@@ -784,10 +784,97 @@ def analyze_pdf_endpoint():
             'message': str(e)
         }), 400
     except Exception as e:
-        print(f"❌ Erro ao analisar PDF: {e}")
+        print(f"❌ Erro ao processar PDF: {str(e)}")
         return jsonify({
             'status': 'error',
             'message': f'Erro ao processar PDF: {str(e)}'
+        }), 500
+
+# ================================
+# ENDPOINT - CHAT COM IA (COMPATÍVEL COM FRONTEND)
+# ================================
+
+@app.route('/api/chat', methods=['POST'])
+def chat_endpoint():
+    """
+    Endpoint de chat unificado com suporte a múltiplos modelos (GPT-5, GPT-4o, etc)
+    
+    Request (JSON):
+        {
+            "model": "gpt-4o" (ou "gpt-5", "gpt-4", "gpt-3.5-turbo"),
+            "messages": [
+                {"role": "system", "content": "..."},
+                {"role": "user", "content": "..."}
+            ],
+            "max_tokens": 2000
+        }
+    
+    Response:
+        {
+            "choices": [{
+                "message": {
+                    "content": "resposta da IA"
+                }
+            }],
+            "model": "modelo usado",
+            "tokens_info": {...}
+        }
+    """
+    try:
+        data = request.json
+        
+        if not data:
+            return jsonify({
+                'error': 'Requisição vazia'
+            }), 400
+        
+        model = data.get('model', 'gpt-4o')
+        messages = data.get('messages', [])
+        max_tokens = data.get('max_tokens', 2000)
+        
+        # Validar modelo
+        modelos_suportados = ['gpt-5', 'gpt-4o', 'gpt-4', 'gpt-3.5-turbo']
+        if model not in modelos_suportados:
+            model = 'gpt-4o'
+            print(f"⚠️ Modelo inválido. Usando padrão: {model}")
+        
+        print(f"💬 Chat endpoint chamado")
+        print(f"   Modelo: {model}")
+        print(f"   Mensagens: {len(messages)}")
+        print(f"   Max tokens: {max_tokens}")
+        
+        # Chamar process_openai_request
+        response, error = process_openai_request(messages, model, max_tokens)
+        
+        if error:
+            print(f"❌ Erro ao processar requisição: {error}")
+            return jsonify({
+                'error': error
+            }), 500
+        
+        # Formatar resposta compatível com frontend
+        content = response.choices[0].message.content
+        
+        print(f"✅ Resposta gerada ({len(content)} chars)")
+        
+        return jsonify({
+            'choices': [{
+                'message': {
+                    'content': content
+                }
+            }],
+            'model': model,
+            'tokens_info': {
+                'max_tokens': max_tokens
+            }
+        }), 200
+    
+    except Exception as e:
+        print(f"❌ Erro no endpoint /api/chat: {type(e).__name__}: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'error': str(e)
         }), 500
 
 # ================================
