@@ -1164,7 +1164,7 @@ def chat_endpoint():
 # ================================
 
 @app.route('/api/health', methods=['GET'])
-def health():
+def health_check():
     """Health check endpoint com informações detalhadas"""
     try:
         # Testar conexão com banco
