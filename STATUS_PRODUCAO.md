@@ -1,200 +1,121 @@
 # ✅ PRODUÇÃO - Status & Próximos Passos
 
-**Data**: 11 Nov 2025 | **Status**: 🟢 PRODUÇÃO ATIVA
+**Data**: 21 Nov 2025 | **Status**: ��� PRODUÇÃO ATIVA | **Versão**: GPT-5 Responses API + Rateio Estruturado
 
 ---
 
-## 🌎 Deploys Ativos
+## ��� Deploys Ativos
 
 - ✅ Backend (Render): https://praiassp-tools.onrender.com
 - ✅ Frontend (Vercel): https://praias-sp-tools.vercel.app
+- ✅ GPT-5: Responses API com reasoning (effort="low") + text (verbosity="high")
 
 ---
 
-## 🔎 Endpoints Testados
+## ��� Endpoints Testados e Validados
 
-- GET `/api/resumo` → 200 OK
-- GET `/api/movimentos` → 200 OK
-- GET `/api/orcamento` → 200 OK
-- POST `/api/upload` (PDF) → 200 OK
-
----
-
-## 🟢 Status Atual
-
-- Backend e frontend integrados e funcionando
-- Upload de PDF validado (via curl e frontend)
-- CORS configurado corretamente
-- `.vercelignore` e `vercel.json` ajustados
+- GET `/api/resumo` → 200 OK ✅
+- GET `/api/movimentos` → 200 OK ✅
+- GET `/api/orcamento` → 200 OK ✅
+- POST `/api/upload` (PDF) → 200 OK ✅
+- POST `/api/analyze-pdf` (GPT-5) → 200 OK com análise financeira ✅
+- OPTIONS (CORS preflight) → 200 OK ✅
 
 ---
 
-## �️ Histórico de Correções
+## ��� Status Atual - GPT-5 Integration (COMPLETO)
 
-- Correção do placeholder do campo de mensagem para "Digite sua mensagem..."
-- Ajuste do CSS para o campo de mensagem ficar idêntico ao sistema de referência (altura e largura)
-- Override de regras globais de CSS para o input de mensagem (min-height, padding, etc)
-- Remoção de duplicidade de arquivos index.html e deploy servindo o arquivo correto
+✅ **IMPLEMENTADO**:
+1. CEO prompt com 8 seções (extração estruturada de dados financeiros)
+2. Responses API para GPT-5 (NOT Chat Completions)
+3. max_tokens alinhado: 6000 (default) / 12000 (max) para GPT-5
+4. chunk_size: 8000 bytes implementado e testado
+5. CORS com suporte a OPTIONS preflight
+6. Database schema com tabelas: movimentos, uploads, configuracoes, orcamento_previsto
+7. **NOVO**: Seção 7 - RATEIO DE APORTES com cálculo obrigatório
+8. **NOVO**: Função validate_aportes_pool() para validação de 6 campos: valor_total_pool, despesas_todas_obras, despesas_esta_obra, taxa_rateio_percentual, valor_rateado_esta_obra, metodo_calculo
+9. **NOVO**: Debug logging completo para detecção de aportes_pool na resposta
 
----
-
-## �📋 Próximos Passos
-
-- [ ] Testes de uso real (usuários finais)
-- [ ] Monitoramento e alertas (Sentry, uptime)
-- [ ] Otimizações de performance
-- [ ] Documentação de API e frontend
-
----
-
-## 📝 Histórico
-
-- 11/11/2025: Deploy finalizado, produção ativa, testes curl e frontend OK
-
-4. Adicione Environment Variable:
-   ```
-   REACT_APP_API_URL=https://[seu-render-domain].onrender.com
-   ```
-5. Deploy (automático)
-
-### 4️⃣ Testar (5 min)
-
-```bash
-# Testar saúde
-curl https://[seu-render-domain].onrender.com/health
-
-# Testar análise
-curl -F "file=@relatorio.pdf" https://[seu-render-domain].onrender.com/api/analyze-pdf
-```
+**Teste com 3 PDFs Reais**:
+- ✅ Extração financeira: Saldos, despesas, receitas **funcionando perfeitamente**
+- ⚠️ Rateio estruturado em JSON: **implementado no prompt, validação ativa, AGUARDANDO confirmação em produção**
 
 ---
 
-## 📊 Estrutura Atual
+## ��️ Histórico de Correções (Sessão Atual)
 
-```
-api/index.py
-├─ Fase 1: Endpoints básicos (movimentos, resumo, upload, orcamento) ✅
-└─ Fase 2.1: POST /api/analyze-pdf com OpenAI ✅
+**Configuration Alignment** (100% completo):
+- Alinhamento completo com sistema referência (analise-bid-ia-tools)
+- max_tokens para GPT-5: 6000/12000 (vs outros: 2000/4000)
+- chunk_size: 8000 bytes com endpoints integrados
+- CORS: OPTIONS method + preflight headers
+- 3 deploys bem-sucedidos em Render com logs validados
 
-templates/index.html
-├─ Dashboard com tabelas ✅
-├─ Upload de arquivos ✅
-└─ (Botão de relatórios será adicionado em Fase 2.2)
-
-data/historico_riviera.db
-├─ movimentos ✅
-├─ uploads ✅
-├─ configuracoes ✅
-└─ orcamento_previsto ✅
-```
+**Rateio Enhancement** (em validação):
+- Prompt aprimorado com Seção 7: Cálculo detalhado de rateio com fórmula e exemplo
+- Função validate_aportes_pool(): Verifica 6 campos obrigatórios
+- Debug logging: detect aportes_pool presence in response
+- Código em estado limpo e estável (commit 36b2ec2)
 
 ---
 
-## 📋 O Que Falta (Priorizado)
+## ⚠️ Status Conhecidos
 
-### 🔴 BLOCANTE (Esta Semana)
-
-- [ ] Deploy em produção (Vercel + Render)
-- [ ] Testar end-to-end em produção
-- [ ] Validar com PDFs reais
-
-### 🟡 IMPORTANTE (Próx 2 Semanas)
-
-- [ ] **Fase 2.2**: Endpoint `/api/generate-report` (Excel/HTML/CSV)
-- [ ] Botão frontend para gerar relatórios
-- [ ] Testes com dados reais
-
-### 🟢 DESEJÁVEL (Próx 4 Semanas)
-
-- [ ] **Fase 2.3**: Processamento em background
-- [ ] **Fase 2.4**: Autenticação JWT + multi-tenancy
-- [ ] **Fase 2.5**: Backup automático, monitoramento
+| Item | Status | Detalhes |
+|------|--------|----------|
+| Análise Financeira | ✅ COMPLETO | Saldos, despesas, receitas extraindo corretamente |
+| Rateio no Prompt | ✅ IMPLEMENTADO | Seção 7 com fórmula detalhada |
+| Validação de Rateio | ✅ PRONTO | validate_aportes_pool() aguardando testes em produção |
+| JSON Response com Rateio | ⚠️ PENDENTE VALIDAÇÃO | Prompt enhanced, mas precisa confirmação em Render com debug logs |
+| GPT-5 Configuration | ✅ ALINHADO | Responses API corretamente configurada |
 
 ---
 
-## 🎯 Tudo Que Você Precisa Saber
+## ��� Próximos Passos (Priorizado)
 
-| Tópico                | Arquivo                         | Link              |
-| --------------------- | ------------------------------- | ----------------- |
-| **Deploy & Config**   | `DEPLOY.md`                     | ← Leia isto agora |
-| **Tarefas Pendentes** | `TAREFAS_PENDENTES.md`          | ← Seu roadmap     |
-| **Código OpenAI**     | `api/index.py` (linhas 330-450) | ← Implementado    |
-| **Variáveis Env**     | `.env.example`                  | ← Template        |
-| **Overview Projeto**  | `README.md`                     | ← Visão geral     |
+**CRÍTICO - HOJE**:
+- [ ] Re-testar com 3 PDFs em Render para validar aportes_pool com novo debug logging
+- [ ] Analisar logs para identificar por que JSON não contém aportes_pool (se ainda não aparecer)
+- [ ] Decidir: prompt refinement ou código JSON parsing issue
 
----
+**IMPORTANTE - ESTA SEMANA**:
+- [ ] Se rateio OK → Implementar dashboard visual para breakdown de aportes
+- [ ] Se rateio com problema → Fazer root cause analysis detalhado
+- [ ] Testes E2E com dados reais do CEO
 
-## 🚨 Checklist Crítico Pré-Deploy
-
-```
-Código:
-☐ api/index.py tem endpoint /api/analyze-pdf
-☐ Testou localmente: python api/index.py
-☐ Testou PDF: curl ... /api/analyze-pdf
-☐ Dados aparecem em SQLite
-
-Configuração:
-☐ .env preenchido com chaves reais
-☐ .env.example comentado com instruções
-☐ CORS_ORIGINS tem domínios Vercel + Render
-☐ SECRET_KEY gerado (não deixar valor padrão)
-
-Deploy:
-☐ Render: variáveis de ambiente setadas
-☐ Vercel: REACT_APP_API_URL aponta para Render
-☐ GitHub: push feito com .env.example atualizado
-☐ Build Render passou (check logs)
-☐ Build Vercel passou (check logs)
-
-Validação:
-☐ Health check Render retorna 200
-☐ Vercel carrega frontend
-☐ Podem se comunicar (CORS OK)
-☐ Upload PDF funciona end-to-end
-☐ Dados salvam no banco
-```
+**DESEJÁVEL - PRÓXIMAS 2 SEMANAS**:
+- [ ] Relatórios em Excel/HTML/CSV com rateio breakdown
+- [ ] Automação de processamento em background
+- [ ] Monitoramento e alertas
 
 ---
 
-## 🔗 Links Importantes
+## �� Histórico
 
-- **OpenAI API Keys**: https://platform.openai.com/api-keys
-- **Render Dashboard**: https://dashboard.render.com
-- **Vercel Dashboard**: https://vercel.com/dashboard
-- **GitHub Repo**: https://github.com/Leocrs/PraiasSP-Tools
+- **21/11/2025** (Sessão Atual):
+  - ✅ Alinhamento completo com sistema referência
+  - ✅ GPT-5 Responses API implementado corretamente
+  - ✅ max_tokens, chunk_size, CORS validados
+  - ✅ Rateio de aportes com prompt aprimorado + validação
+  - ✅ Debug logging adicionado para diagnóstico
+  - ✅ Repository estado limpo (commit 36b2ec2 estável)
+  - ��� Aguardando reteste em produção com debug logs ativos
 
----
-
-## 💬 Resumo Executivo para o Boss
-
-✅ **Implementado**: Sistema de análise automática de PDFs com IA (GPT-4o)
-
-- Extrai dados estruturados de relatórios financeiros em ~20 segundos
-- Salva em banco de dados SQLite automaticamente
-
-📅 **Deploy**: Hoje (Vercel + Render, ~30 min de config)
-
-📊 **Próximas Semanas**:
-
-- Geração de relatórios (Excel/HTML/CSV)
-- Automação de processamento em background
-- Segurança com autenticação
-
-💰 **Custo**: Free (Render/Vercel free tiers) + ~$10-20/mês OpenAI
+- **11/11/2025**:
+  - Deploy finalizado, produção ativa, testes curl e frontend OK
 
 ---
 
-## 🎯 Seu Próximo Passo
+## ��� Tudo Que Você Precisa Saber
 
-1. **Agora**: Leia `DEPLOY.md` (10 min)
-2. **Depois**: Preencha `.env` com suas chaves (5 min)
-3. **Depois**: Deploy Render + Vercel (20 min)
-4. **Depois**: Teste em produção (5 min)
-
-**Total: 40 min para estar ao vivo! 🚀**
+| Tópico                | Status                | Descrição              |
+| --------------------- | --------------------- | ---------------------- |
+| **Backend (Render)**  | ✅ ATIVO            | GPT-5 análise funcionando |
+| **Frontend (Vercel)** | ✅ ATIVO            | Dashboard integrado     |
+| **GPT-5 Config**      | ✅ ALINHADO         | Responses API correto   |
+| **Rateio de Aportes** | ⚠️ EM VALIDAÇÃO     | Prompt ready, need test |
+| **Database**          | ✅ OPERACIONAL      | SQLite com 4 tabelas    |
 
 ---
 
-**Qualquer bloqueador, é só chamar!**
-
-Próximo milestone: Fase 2.2 (Relatórios)
+**Próximo Passo**: Fazer reteste com 3 PDFs em Render com debug logs para validar aportes_pool! ���

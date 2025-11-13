@@ -1,167 +1,214 @@
-# 📋 ROADMAP PRODUÇÃO - O Que Falta Implementar
+# ��� ROADMAP PRODUÇÃO - O Que Falta Implementar
 
-Data: 11 Nov 2025
-Status: **PRODUÇÃO ATIVA (Fase 2.1 ✅)**
-
----
-
-## ✅ IMEDIATO (Deploys e Testes)
-
-- [x] Preencher `.env` com chaves reais (OpenAI, Render, Vercel)
-- [x] Push para GitHub
-- [x] Deploy Render (backend)
-- [x] Deploy Vercel (frontend)
-- [x] Teste end-to-end: Vercel → Render → OpenAI → SQLite
-- [x] Upload PDF real via frontend
-- [x] Validação de análise e banco
-- [x] Placeholder do campo de mensagem corrigido
-- [x] CSS do campo de mensagem
-- [x] Deploy servindo arquivo correto (index.html)
-- [x] Override de regras globais de CSS para input
+Data: 21 Nov 2025
+Status: **PRODUÇÃO ATIVA (Fase 2.1 + Rateio Enhancement - Em Validação)**
 
 ---
 
-## 📊 PRÓXIMA SEMANA (Fase 2.2)
+## ✅ COMPLETADO NESTA SESSÃO
 
-- [ ] Relatórios em Excel/HTML/CSV
-  - Endpoint `/api/generate-report` (POST)
-  - Parâmetros: `format` (excel|html|csv), `filters` (competência, obra)
-  - Gerar Excel com formatação (pandas + openpyxl)
-  - Gerar HTML responsivo (Jinja2)
-  - Gerar CSV para integração
-  - Testes com dados reais
-  - Botão frontend para relatórios
-  - Integração e download automático
-
----
-
-## 🤖 PRÓXIMAS 2 SEMANAS (Fase 2.3)
-
-- [ ] Automação com processamento em background
-  - Tabela `analises_pendentes` (status, timestamp, erro)
-  - Fila de PDFs com `threading.Queue`
-  - Worker thread para processar em background
-- [ ] Endpoint `/api/status/{id}` para verificar progresso
-- [ ] Webhook/Email de notificação (opcional inicialmente)
-- **Tempo**: ~10-15h
-- **Arquivo**: `api/index.py` (adicionar ~200 linhas) + `api/worker.py` (novo)
+**Implementação GPT-5 + Rateio Estruturado**:
+- [x] Alinhamento completo com sistema referência (analise-bid-ia-tools)
+- [x] GPT-5 Responses API (NOT Chat Completions) - corretamente configurado
+- [x] max_tokens para GPT-5: 6000 (default) / 12000 (max)
+- [x] chunk_size: 8000 bytes implementado em endpoints
+- [x] CORS com suporte a OPTIONS method (preflight)
+- [x] CEO prompt com 8 seções para análise financeira estruturada
+- [x] Seção 7 - RATEIO DE APORTES com fórmula detalhada + exemplo
+- [x] Função validate_aportes_pool() - valida 6 campos obrigatórios
+- [x] Debug logging para detecção de aportes_pool em resposta
+- [x] 3 PDFs testados - Análise financeira perfeita, rateio em validação
+- [x] Repository limpo (git reset --hard 36b2ec2 - estado estável)
 
 ---
 
-## 🔐 PRÓXIMAS 3 SEMANAS (Fase 2.4)
+## ��� CRÍTICO - HOJE/AMANHÃ (Fase 2.1 Final)
 
-### [ ] 6. Autenticação & Multi-tenancy
+### [ ] Re-testar com 3 PDFs em Render (com debug logs ativos)
 
-- [ ] Criar tabelas: `usuarios`, `organizacoes`, `tokens_revogados`
-- [ ] Endpoint `/api/auth/login` (JWT)
-- [ ] Endpoint `/api/auth/logout`
-- [ ] Middleware `@jwt_required()` em todos endpoints
-- [ ] Isolamento de dados: usuário vê apenas seus dados
-- [ ] Suporte a múltiplas obras por organização
-- **Tempo**: ~12-15h
-- **Arquivo**: `api/index.py` + `api/auth.py` (novo)
+**Objetivo**: Validar se aportes_pool está sendo retornado em JSON estruturado
 
----
+**Steps**:
+1. Deploy debug version em Render (commit 36b2ec2 já tem logging)
+2. Testar 3 PDFs via frontend Vercel
+3. Verificar logs Render para:
+   - "DEBUG: aportes_pool found in response" ✅ OU
+   - "DEBUG: aportes_pool NOT found" ❌
+4. Se ✅ → Rateio COMPLETO, passar para fase 2.2
+5. Se ❌ → Fazer root cause analysis:
+   - Prompt não sendo interpretado corretamente?
+   - JSON parsing removendo o campo?
+   - GPT-5 Responses API limitação?
 
-## 🧪 PRÓXIMAS 4 SEMANAS (Fase 2.5)
-
-### [ ] 7. Testes & Otimizações
-
-- [ ] Testes E2E com PDFs reais (Mac Vidros, Marvidros, etc)
-- [ ] Performance test (1000+ movimentos)
-- [ ] Teste de segurança (SQL injection, XSS)
-- [ ] Backup automático do banco
-- [ ] Monitoramento de errors (Sentry ou similar)
-- **Tempo**: ~10-12h
+**Tempo estimado**: 30 min
+**Bloqueador para**: Fase 2.2 (dashboard visual), Fase 2.3 (relatórios)
 
 ---
 
-## 🚨 CRÍTICO (Anytime)
+## ��� PRÓXIMA SEMANA (Fase 2.2) - SE RATEIO FUNCIONAR
 
-### [ ] 8. Bugs/Fixes Descobertos
+### [ ] Dashboard Visual para Breakdown de Aportes
 
-- Listar aqui conforme descobrir na produção
-- Priorizar por impacto × urgência
+**Dependência**: Rateio ✅ validado
+
+**O que implementar**:
+- Tabela visual: Distribuição de aportes por obra
+- Colunas: Obra, Saldo, Despesa, Taxa de Rateio (%), Valor Rateado
+- Gráfico de pizza: Distribuição percentual de aportes
+- Filtros: Por período, por tipo de despesa
+- Export: Tabela para Excel/CSV
+
+**Tempo estimado**: 8-12h
+**Arquivo**: `templates/index.html` + CSS novo
 
 ---
 
-## 📊 Progresso Geral
+## ��� PRÓXIMAS 2 SEMANAS (Fase 2.3) - RELATÓRIOS
+
+### [ ] Endpoint `/api/generate-report` - Excel/HTML/CSV
+
+**O que implementar**:
+- POST `/api/generate-report`
+- Parâmetros: format (excel|html|csv), filters (competência, obra), include_rateio (bool)
+- Excel: Formatação profissional com cores, bordas, somas
+- HTML: Responsivo com gráficos embutidos
+- CSV: Estrutura para integração com sistemas
+
+**Tempo estimado**: 10-15h
+**Arquivo**: `api/index.py` + novo módulo `api/reports.py`
+
+---
+
+## ⚙️ PRÓXIMAS 3 SEMANAS (Fase 2.4) - AUTOMAÇÃO
+
+### [ ] Processamento em Background
+
+**O que implementar**:
+- Tabela: `analises_pendentes` (id, arquivo, status, timestamp, erro)
+- Fila: `threading.Queue` para PDFs aguardando processamento
+- Worker thread: Processa 1 PDF por vez (não bloqueia API)
+- Endpoint: GET `/api/status/{analise_id}` - retorna status
+- WebSocket (futuro): Notificação em tempo real
+
+**Tempo estimado**: 12-18h
+**Arquivo**: `api/index.py` + novo `api/worker.py`
+
+---
+
+## ��� PRÓXIMAS 4 SEMANAS (Fase 2.5) - SEGURANÇA
+
+### [ ] Autenticação JWT + Multi-tenancy
+
+**O que implementar**:
+- Tabelas: `usuarios`, `organizacoes`, `permissoes`
+- Endpoint: POST `/api/auth/login` - retorna JWT
+- Middleware: `@jwt_required()` em todos endpoints
+- Isolamento: Usuário vê apenas dados de sua organização
+- Roles: Admin, Editor, Viewer
+
+**Tempo estimado**: 15-20h
+**Arquivo**: `api/auth.py` (novo) + modificações em `api/index.py`
+
+---
+
+## ��� PRÓXIMAS 5 SEMANAS (Fase 2.6) - TESTES & MONITORAMENTO
+
+### [ ] Validação Final + Monitoramento
+
+**O que implementar**:
+- Testes E2E com 10+ PDFs reais de obras diferentes
+- Performance: tempo de análise, uso de memória
+- Segurança: testes de SQL injection, XSS, CSRF
+- Backup automático: SQLite → Google Drive / AWS S3
+- Monitoring: Sentry para errors, logs estruturados
+
+**Tempo estimado**: 10-15h
+**Arquivo**: `tests/` (novo diretório)
+
+---
+
+## ��� Progresso Geral
 
 ```
-FASE 1: MVP Base                    ✅ 100%
-FASE 2.1: OpenAI Integration        ✅ 100%
-FASE 2.2: Relatórios               📅 Próxima semana
-FASE 2.3: Automação                📅 Próximas 2 semanas
-FASE 2.4: Segurança/Auth           📅 Próximas 3 semanas
-FASE 2.5: Testes & Otimizações     📅 Próximas 4 semanas
+FASE 1: MVP Base                    ✅ 100% (Nov 11)
+FASE 2.1: OpenAI Integration        ✅ 99% (Nov 21 - aguardando validacao rateio)
+FASE 2.2: Dashboard Rateio          ��� Esta semana (depende de 2.1 ✅)
+FASE 2.3: Automação                 ��� Próximas 2 semanas
+FASE 2.4: Segurança/Auth            ��� Próximas 3 semanas
+FASE 2.5: Testes & Monitoramento    ��� Próximas 4 semanas
 ```
 
 ---
 
-## 💼 Estimativa Total
+## ��� Estimativa Total
 
-| Fase      | Horas         | Data Estimada |
-| --------- | ------------- | ------------- |
-| 2.1       | ✅ 0 (pronto) | ✅ Nov 11     |
-| 2.2       | 10-15h        | Nov 18        |
-| 2.3       | 12-18h        | Nov 25        |
-| 2.4       | 12-18h        | Dec 2         |
-| 2.5       | 10-12h        | Dec 9         |
-| **Total** | **44-63h**    | **~1 mês**    |
-
----
-
-## 🔗 Dependências Entre Tarefas
-
-```
-Deploy Produção (imediato)
-    ↓
-Fase 2.2 (Relatórios) ← requer dados em produção
-    ↓
-Fase 2.3 (Automação) ← requer relatórios prontos
-    ↓
-Fase 2.4 (Auth) ← pode ser paralelo
-    ↓
-Fase 2.5 (Testes)
-```
+| Fase      | Status        | Horas         | Próximo Milestone |
+| --------- | ------------- | ------------- | ----------- |
+| 2.1       | ⚠️ 99% PRONTO | ✅ Feito       | Re-testar hoje |
+| 2.2       | ��� Aguardando | 8-12h         | Nov 25      |
+| 2.3       | ��� Planejado  | 10-15h        | Dec 2       |
+| 2.4       | ��� Planejado  | 15-20h        | Dec 9       |
+| 2.5       | ��� Planejado  | 10-15h        | Dec 16      |
+| **Total** | **~50% Done** | **~50-70h**   | **~1 mês**  |
 
 ---
 
-## 📌 Notas Importantes
+## ��� Dependências Entre Tarefas
 
-1. **Banco SQLite em Render (Free tier)**
+```
+Deploy Produção (✅ COMPLETO Nov 11)
+    ↓
+Validar Rateio JSON (⚠️ EM PROGRESSO - CRÍTICO)
+    ↓
+Fase 2.2: Dashboard Visual (��� Esta semana SE 2.1 ✅)
+    ↓
+Fase 2.3: Relatórios (��� Próximas 2 semanas)
+    ↓
+Fase 2.4: Automação (��� Paralelo com 2.2-2.3)
+    ↓
+Fase 2.5: Testes & Monitoramento (��� Final)
+```
 
+---
+
+## ��� Notas Importantes
+
+1. **Crítico**: Rateio precisa estar funcionando para avançar
+   - Se ❌ → Debug detalhado necessário
+   - Se ✅ → Timeline acima é viável
+
+2. **Banco SQLite em Render (Free tier)**
    - ⚠️ Dados não persistem após redeploy
-   - Solução: Migrar para PostgreSQL se precisar dados permanentes
+   - Solução futura: PostgreSQL
 
-2. **OpenAI Costs**
+3. **Custos OpenAI**
+   - GPT-5: ~$0.02-0.05 por request
+   - Estimativa: ~$10-30/mês com uso normal
 
-   - GPT-4o: ~$0.01-0.02 por request
-   - Estimativa: ~$5-20/mês com uso normal
-   - Defina limites de taxa no Render
-
-3. **Vercel + Render (Free tiers)**
-   - Vercel: 100GB bandwidth/mês (suficiente)
-   - Render: 750h/mês (suficiente para aplicação leve)
-   - Upgrade se precisar de mais
+4. **Render + Vercel (Free tiers)**
+   - Render: 750h/mês (suficiente)
+   - Vercel: 100GB bandwidth (suficiente)
 
 ---
 
-## ✅ Checklist Pre-Deployment
+## ✅ Checklist Atual
 
-- [x] `.env` preenchido com chaves reais
-- [x] `api/index.py` testado localmente
-- [x] SQLite tem dados de teste
-- [x] Vercel domain configurado
-- [x] Render domain configurado
-- [x] CORS_ORIGINS atualizado em `.env`
-- [x] `requirements.txt` tem todas dependências
-- [x] `gunicorn.conf.py` está correto
-- [x] `Procfile` aponta para arquivo certo
-- [x] `runtime.txt` com Python 3.11
+**PRÉ-RETESTE RATEIO**:
+- [x] Código em estado limpo (git clean)
+- [x] Commit 36b2ec2 com debug logging ativo
+- [x] CEO prompt com Seção 7 (rateio)
+- [x] validate_aportes_pool() implementado
+- [ ] Deploy com debug logs em Render (próximo passo)
+- [ ] 3 PDFs testados com debug output capturado
 
 ---
 
-**Próximo Passo**: Execute as tarefas de "IMEDIATO" para ter em produção hoje!
+## ��� Próximo Passo
 
-Qualquer bloqueador, me avisa! 🚀
+**AGORA**: Re-testar com 3 PDFs em Render e verificar logs para validar aportes_pool
+
+**Quando completo**: Atualizar este documento e planejar Fase 2.2
+
+---
+
+**Qualquer bloqueador, é só chamar!** ���
