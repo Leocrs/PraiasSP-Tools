@@ -113,6 +113,7 @@ from dotenv import load_dotenv
 import gc
 import json
 import PyPDF2
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Carregar variáveis de ambiente
 load_dotenv()
@@ -277,12 +278,68 @@ def get_resumo():
         }), 500
 
 # ================================
+# FUNÇÕES AUXILIARES - PROCESSAMENTO PARALELO
+# ================================
+
+def process_single_pdf(file_obj, model):
+    """
+    Processa um único PDF de forma independente (para parallelização)
+    
+    Args:
+        file_obj: Objeto de arquivo
+        model: Modelo a usar
+    
+    Returns:
+        Dict com resultado ou erro
+    """
+    try:
+        filename = file_obj.filename
+        print(f"  🔄 Iniciando: {filename}")
+        
+        # Extrair texto
+        pdf_text = extract_pdf_text(file_obj)
+        
+        if not pdf_text or len(pdf_text.strip()) < 10:
+            return {
+                'status': 'error',
+                'filename': filename,
+                'message': 'PDF sem texto extraível'
+            }
+        
+        print(f"    ✅ Texto extraído: {filename}")
+        
+        # Analisar com OpenAI
+        analysis = analyze_with_openai(pdf_text, document_type='relatório financeiro', model=model)
+        
+        print(f"    ✅ Análise concluída: {filename}")
+        
+        # Salvar no banco
+        save_analysis_to_db(analysis)
+        
+        return {
+            'status': 'success',
+            'filename': filename,
+            'codigo_obra': analysis.get('codigo_obra'),
+            'competencia': analysis.get('competencia')
+        }
+    
+    except Exception as e:
+        print(f"    ❌ Erro em {file_obj.filename}: {str(e)[:100]}")
+        return {
+            'status': 'error',
+            'filename': file_obj.filename,
+            'message': str(e)[:200]
+        }
+
+# ================================
 # ROTAS - UPLOAD E PROCESSAMENTO
 # ================================
 
 @app.route('/api/upload', methods=['POST'])
 def upload_pdf():
-    """Receber e processar PDFs"""
+    """Receber e processar múltiplos PDFs em paralelo"""
+    start_time = time.time()
+    
     try:
         if 'files' not in request.files:
             return jsonify({
@@ -298,57 +355,96 @@ def upload_pdf():
                 'message': 'Lista de arquivos vazia'
             }), 400
         
-        processados = []
-        erros = []
+        # Obter modelo
+        model = request.form.get('model', 'gpt-5')
+        modelos_suportados = ['gpt-5', 'gpt-4o', 'gpt-4', 'gpt-3.5-turbo']
+        if model not in modelos_suportados:
+            model = 'gpt-5'
+        
+        print(f"\n{'='*60}")
+        print(f"📦 PROCESSAMENTO EM PARALELO DE {len(files)} PDFs")
+        print(f"🤖 Modelo: {model}")
+        print(f"⏱️ Início: {datetime.now().strftime('%H:%M:%S')}")
+        print(f"{'='*60}")
+        
+        # Validar e filtrar arquivos
+        arquivos_validos = []
+        erros_validacao = []
         
         for file in files:
             if file.filename == '':
-                erros.append('Arquivo sem nome')
+                erros_validacao.append('Arquivo sem nome')
                 continue
             
             if not file.filename.lower().endswith('.pdf'):
-                erros.append(f'{file.filename} - tipo de arquivo inválido')
+                erros_validacao.append(f'{file.filename} - tipo inválido')
                 continue
             
             if file.content_length and file.content_length > MAX_FILE_SIZE:
-                erros.append(f'{file.filename} - arquivo muito grande')
+                erros_validacao.append(f'{file.filename} - muito grande (>{MAX_FILE_SIZE/(1024*1024)}MB)')
                 continue
             
-            try:
-                # Salvar arquivo
-                filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{file.filename}"
-                filepath = os.path.join(UPLOAD_FOLDER, filename)
-                file.save(filepath)
-                
-                # Registrar no banco
-                with get_db_connection() as conn:
-                    cursor = conn.cursor()
-                    cursor.execute('''
-                        INSERT INTO uploads (nome_arquivo, status)
-                        VALUES (?, ?)
-                    ''', (filename, 'processando'))
-                    conn.commit()
-                
-                processados.append({
-                    'arquivo': filename,
-                    'tamanho': file.content_length,
-                    'status': 'recebido'
-                })
+            arquivos_validos.append(file)
+        
+        print(f"✅ {len(arquivos_validos)} arquivo(s) válido(s)")
+        if erros_validacao:
+            print(f"⚠️ {len(erros_validacao)} arquivo(s) descartado(s)")
+        
+        # ⭐ PROCESSAMENTO PARALELO com ThreadPoolExecutor
+        resultados = []
+        erros = erros_validacao.copy()
+        
+        if arquivos_validos:
+            print(f"\n🔄 Iniciando processamento paralelo...")
+            # Usar 3 workers (bom para 3 PDFs)
+            max_workers = min(3, len(arquivos_validos))
             
-            except Exception as e:
-                erros.append(f'{file.filename} - {str(e)}')
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                # Submeter todos os PDFs para processamento
+                futures = {
+                    executor.submit(process_single_pdf, file, model): file.filename 
+                    for file in arquivos_validos
+                }
+                
+                # Coletar resultados conforme completam
+                for future in as_completed(futures):
+                    filename = futures[future]
+                    try:
+                        resultado = future.result(timeout=300)  # 5 minutos max por PDF
+                        resultados.append(resultado)
+                        
+                        if resultado['status'] == 'error':
+                            erros.append(f"{filename}: {resultado.get('message', 'Erro desconhecido')}")
+                    except Exception as e:
+                        erros.append(f"{filename}: {str(e)[:100]}")
+        
+        processing_time = time.time() - start_time
+        
+        print(f"\n{'='*60}")
+        print(f"✅ Processamento completo!")
+        print(f"📊 Resultados: {len([r for r in resultados if r['status'] == 'success'])} sucesso(s)")
+        if erros:
+            print(f"❌ Erros: {len(erros)}")
+        print(f"⏱️ Tempo total: {processing_time:.2f}s")
+        print(f"{'='*60}\n")
         
         return jsonify({
-            'status': 'success' if processados else 'error',
-            'processados': processados,
+            'status': 'success' if resultados else 'error',
+            'message': f'Processados {len(resultados)} PDF(s)',
+            'model': model,
+            'processados': [r for r in resultados if r['status'] == 'success'],
             'erros': erros,
-            'total': len(processados)
-        }), 200 if processados else 400
+            'processing_time': round(processing_time, 2)
+        }), 200 if resultados else 400
     
     except Exception as e:
+        processing_time = time.time() - start_time
+        print(f"❌ ERRO GERAL: {str(e)}")
+        print(f"⏱️ Tempo até erro: {processing_time:.2f}s")
         return jsonify({
             'status': 'error',
-            'message': str(e)
+            'message': f'Erro ao processar: {str(e)[:200]}',
+            'processing_time': round(processing_time, 2)
         }), 500
 
 # ================================
@@ -532,18 +628,24 @@ def process_openai_request(messages, model, max_tokens):
             print(f"📝 Combined input length: {len(combined_input)} chars")
             
             # ✅ Responses API com parâmetros corretos para GPT-5
-            response = openai_client.responses.create(
-                model=model,
-                input=combined_input,
-                max_output_tokens=max_tokens,
-                reasoning={"effort": "low"},  # Baixo esforço para velocidade
-                text={"verbosity": "high"}  # Alta verbosidade para análise completa
-            )
+            try:
+                response = openai_client.responses.create(
+                    model=model,
+                    input=combined_input,
+                    max_output_tokens=max_tokens,
+                    reasoning={"effort": "high"},  # ⭐ ULTRA-DETALHADO para análises financeiras
+                    text={"verbosity": "high"}  # Alta verbosidade para análise completa
+                )
+                
+                print(f"✅ Resposta GPT-5 recebida (reasoning:high) | Output tokens: {max_tokens}")
+                return CompatResponse(response.output_text), None
             
-            print(f"✅ Resposta GPT-5 recebida | Output tokens: {max_tokens}")
-            
-            # Converter para formato compatível com Chat Completions
-            return CompatResponse(response.output_text), None
+            except Exception as gpt5_error:
+                # 🔄 FALLBACK: GPT-5 indisponível, tentar GPT-4o
+                print(f"⚠️ GPT-5 falhou: {str(gpt5_error)[:100]}")
+                print(f"🔄 Tentando fallback com GPT-4o...")
+                model = 'gpt-4o'
+                # Continua abaixo com Chat Completions
         
         else:
             # Chat Completions API para outros modelos (GPT-4o, GPT-4, etc)
