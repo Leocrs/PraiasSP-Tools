@@ -1047,7 +1047,7 @@ def analyze_pdf_endpoint():
 # ENDPOINT - CHAT COM IA (COMPATÍVEL COM FRONTEND)
 # ================================
 
-@app.route('/api/chat', methods=['POST'])
+@app.route('/api/chat', methods=['POST', 'OPTIONS'])
 def chat_endpoint():
     """
     Endpoint de chat unificado com suporte a múltiplos modelos (GPT-5, GPT-4o, etc)
@@ -1073,6 +1073,11 @@ def chat_endpoint():
             "processing_time": 1.23
         }
     """
+    
+    # Responder às requisições OPTIONS (preflight CORS)
+    if request.method == 'OPTIONS':
+        return '', 204
+    
     start_time = time.time()
     
     try:
