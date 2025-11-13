@@ -579,67 +579,136 @@ def process_openai_request(messages, model, max_tokens):
         return None, str(e)
 
 def analyze_with_openai(pdf_text, document_type='relatório', model='gpt-4o'):
-    """Analisar texto com OpenAI (GPT-5, GPT-4o, etc)"""
+    """Analisar texto com OpenAI (GPT-5, GPT-4o, etc) - Lógica CEO Financeiro"""
     try:
-        prompt = f"""Você é especialista em análise de relatórios financeiros de CONSTRUÇÃO - Riviera Empreendimentos.
+        prompt = f"""🎯 VOCÊ É UM AUDITOR FINANCEIRO SÊNIOR - RIVIERA EMPREENDIMENTOS
 
-OBJETIVO PRINCIPAL:
-Processar PDFs mensais de Praias SP seguindo a lógica de consolidação financeira do CEO.
+MISSÃO CRÍTICA:
+Processar PDFs mensais de Praias SP com PRECISÃO ABSOLUTA. Cada número errado custará MILHARES.
+Você NÃO pode errar. Você NÃO pode ser vago. Você NÃO pode aproximar.
 
-TIPOS DE DOCUMENTOS ESPERADOS (identifique automaticamente):
-- "SHOPP 562 601 603 e 604 POSIÇÃO FINANC ...pdf" → Posição financeira de shopping
-- "SHOPP ... DESPESAS ...pdf" → Despesas detalhadas de shopping
-- "OBRA 616 ... POSIÇÃO FINANC ...pdf" → Posição financeira de obra
-- Outros padrões de nomenclatura com POSIÇÃO FINANC ou DESPESAS
+═══════════════════════════════════════════════════════════════════════════
 
-DADOS A EXTRAIR:
-1. **Competência**: Mês/ano no formato MM/YYYY (obrigatório)
-2. **Código da obra**: Identificador numérico (562, 601, 603, 604, 616, etc)
-3. **Nome da obra**: Nome completo (ex: "SHOPP", "OBRA 616")
-4. **Despesas por obra**: Discriminar TODAS as despesas com valores em reais
-5. **Aportes do pool**: Valor total e distribuição (se houver)
-6. **Rentabilidade**: Rendimento financeiro mensual
-7. **Saldo final**: Saldo consolidado ao final do período
+IDENTIFICAÇÃO DO DOCUMENTO:
+┌─ Procure nos títulos/cabeçalhos:
+│  ├─ "POSIÇÃO FINANC" → Tipo: POSICAO_FINANCEIRA (balanço consolidado)
+│  ├─ "DESPESAS" → Tipo: DETALHAMENTO_DESPESAS (nota fiscal a nota fiscal)
+│  └─ Código da obra: 562, 601, 603, 604, 616, BCO, etc
+└─ OBRIGATÓRIO extrair: CÓDIGO, TIPO, COMPETÊNCIA
 
-REGRA DE RATEIO DE APORTES:
-- Padrão: PROPORCIONAL ÀS DESPESAS DO MÊS
-- Se o documento não especificar, calcule: (Despesa da Obra / Total de Despesas) × Aporte_Total
-- Indique a taxa de rateio no resultado
+EXTRAÇÃO OBRIGATÓRIA DE CAMPOS:
+═════════════════════════════════════════════════════════════════════════════
 
-TABELAS E DADOS ESTRUTURADOS:
-- Se houver tabelas, PRESERVE TODOS OS VALORES EXATAMENTE
-- Cada linha da tabela deve ser um movimento separado
-- Não agrupe ou aproxime valores
+1️⃣ COMPETÊNCIA (data do relatório)
+   - Procure: "SETEMBRO 25", "SET 2025", "09/2025", "setembro/2025"
+   - CONVERTA SEMPRE para: "09/2025"
+   - SE NÃO ENCONTRAR: return erro "Competência não encontrada"
 
-VALIDAÇÕES CRÍTICAS:
-- Se competência estiver em formato diferente, converta para MM/YYYY
-- Se código da obra tiver prefixos (ex: "OBRA-616"), extraia apenas o número
-- Se valor tiver símbolos (R$, ., ,), limpe e converta para decimal
-- Se algo não estiver claro, marque como "Não informado" e indique suspeita
+2️⃣ CÓDIGO DA OBRA (identificador único)
+   - Procure no título: 562, 601, 603, 604, 616, BCO, etc
+   - Se houver múltiplos codes (ex: "562 601 603 e 604"), SEPARE EM 4 EXTRAÇÕES
+   - SE NÃO ENCONTRAR: return erro "Código não encontrado"
 
-Retorne APENAS um JSON válido (sem markdown, sem explicações) com esta EXATA estrutura:
-{{
-    "competencia": "MM/YYYY",
-    "codigo_obra": "XXX",
-    "obra_nome": "Nome Completo",
-    "tipo_documento": "POSIÇÃO_FINANC|DESPESAS",
+3️⃣ SALDO INICIAL (sempre em número com 2 decimais)
+   - Procure: "Saldo em 31/08/2025", "Saldo Inicial", "Saldo Anterior"
+   - Format: 1234567.89 (sem R$, sem separadores de milhar)
+   - SE NÃO ENCONTRAR: "não_informado"
+
+4️⃣ DESPESAS DETALHADAS (CRÍTICO - não aproxime)
+   - Procure TODAS as linhas com valores negativos ou etiquetadas "Despesa"
+   - PARA CADA DESPESA extrait:
+     * descricao: "Fornecedor X - Serviço Y"
+     * valor: 12345.67 (exato, sem aproximação)
+     * categoria: "Material" | "MO" | "Servicos" | "Locacao" | "Outros"
+     * fornecedor: "Nome Exato do Fornecedor"
+   - TOTALIZE: despesas_total = SUM(todas despesas)
+   - VALIDAR: Se há tabelas, leia TODA a coluna de valores
+   - SE HOUVER DÚVIDA: indique com "⚠️" no JSON
+
+5️⃣ RECEITAS (tudo que entra)
+   - Aportes do pool: valor_exato
+   - Rentabilidade: valor_exato
+   - Reembolsos: valor_exato
+   - TOTAL DE RECEITAS: receitas_total = SUM(todas receitas)
+
+6️⃣ SALDO FINAL (obrigatório e preciso)
+   - Procure: "Saldo em 30/09/2025", "Saldo Disponível", "Saldo Final"
+   - Format: 1234567.89
+   - VALIDAR: Saldo_Final ≈ Saldo_Inicial + Receitas - Despesas (±R$1,00)
+   - SE DIVERGÊNCIA > R$1,00: adicione flag "saldo_auditoria_necessaria"
+
+7️⃣ RATEIO DE APORTES (CÁLCULO AUTOMÁTICO)
+   - Se "POSIÇÃO FINANCEIRA": extraia aportes_recebidos_total
+   - CALCULE taxa_rateio = despesas_esta_obra / total_despesas_mes
+   - CALCULE aporte_rateado = aportes_recebidos_total × taxa_rateio
+   - Exemplo:
+     * Despesas Obra 616: R$ 82,60
+     * Despesas Shopping: R$ 7.319.079,56
+     * Total: R$ 7.319.162,16
+     * Taxa Obra 616: 82,60 / 7.319.162,16 = 0.001129%
+     * Aporte recebido: R$ 5.483.433,37
+     * Aporte rateado Obra 616: R$ 5.483.433,37 × 0.001129% = R$ XXX,XX
+
+8️⃣ CONCILIAÇÃO BANCÁRIA (bandeira vermelha)
+   - Procure: "Bradesco", "Saldo Banco", "Conciliado com"
+   - EXTRAIA: saldo_banco_oficial, diferenca_conciliacao
+   - SE diferenca > R$ 100: flag "diferenca_relevante_investigar"
+
+═════════════════════════════════════════════════════════════════════════════
+
+REGRAS NÃO-NEGOCIÁVEIS:
+❌ NÃO retorne narrativa, APENAS JSON
+❌ NÃO aproxime valores (use valores exatos do PDF)
+❌ NÃO agregue obras diferentes (cada código é uma extração separada)
+❌ NÃO ignore tabelas (leia cada linha)
+❌ NÃO esqueça decimais (sempre XX,XX)
+❌ SE NÃO ENCONTRAR CAMPO: use "não_informado" COM FLAG DE ALERTA
+
+═════════════════════════════════════════════════════════════════════════════
+
+RETORNE ESTE JSON (sem markdown, sem explicações):
+
+[
+  {{
+    "competencia": "09/2025",
+    "codigo_obra": "616",
+    "nome_obra": "Extra Contratual - Fiação Enterrada Av. Riviera Mod. 17 e 18",
+    "tipo_documento": "POSICAO_FINANCEIRA",
+    "saldo_inicial": 282995.57,
+    "saldo_final": 355854.25,
     "despesas": [
-        {{"descricao": "Fornecedor/Descricao", "valor": 1000.50, "categoria": "Material|MO|Outros"}}
+      {{"descricao": "Descrição exata", "valor": 123.45, "categoria": "Servicos", "fornecedor": "Nome Fornecedor"}}
     ],
-    "despesas_total": 5000.00,
+    "despesas_total": 82.60,
+    "receitas": [
+      {{"tipo": "Aporte", "valor": 1000.00}},
+      {{"tipo": "Rentabilidade", "valor": 72941.28}}
+    ],
+    "receitas_total": 72941.28,
     "aportes_pool": {{
-        "valor_total": 10000.00,
-        "valor_rateado_esta_obra": 2500.00,
-        "taxa_rateio": 0.25,
-        "metodo": "Proporcional às despesas"
+      "valor_total_pool": 5483433.37,
+      "despesas_todas_obras": 7319162.16,
+      "taxa_rateio_esta_obra": 0.00001129,
+      "valor_rateado_esta_obra": 61.87,
+      "metodo_calculo": "Proporcional às despesas do mês"
     }},
-    "rentabilidade_mensal": 150.75,
-    "saldo_final": 3500.00,
-    "tabelas_completas": [
-        {{"fonte": "Tabela X", "linhas": [...]}}
-    ],
-    "observacoes": "Notas importantes sobre o documento"
-}}
+    "rentabilidade_mensal": 72941.28,
+    "conciliacao_bancaria": {{
+      "saldo_banco": 355854.25,
+      "saldo_sistema": 355854.25,
+      "diferenca": 0.00,
+      "status": "conciliado"
+    }},
+    "validacoes": {{
+      "saldo_auditoria": {{"status": "OK", "diferenca_permitida": 0.00}},
+      "alertas": []
+    }},
+    "observacoes": "Texto se houver algo relevante",
+    "qualidade_extracao": "✅ Completa" | "⚠️ Parcial - campos faltantes" | "❌ Erro - campo crítico ausente"
+  }}
+]
+
+═════════════════════════════════════════════════════════════════════════════
 
 DOCUMENTO A PROCESSAR:
 {pdf_text}"""
