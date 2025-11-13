@@ -120,7 +120,20 @@ load_dotenv()
 
 # Inicializar Flask
 app = Flask(__name__, static_folder='../static', template_folder='../templates')
-CORS(app)
+
+# Configurar CORS explicitamente
+CORS(app, 
+     origins=[
+         "https://praias-sp-tools.vercel.app",
+         "http://localhost:3000",
+         "http://localhost:5173",
+         "http://localhost:8080"
+     ],
+     methods=["GET", "POST", "OPTIONS", "PUT", "DELETE"],
+     allow_headers=["Content-Type", "Authorization"],
+     supports_credentials=True,
+     max_age=3600
+)
 
 # Configurações
 REQUEST_TIMEOUT = 120
@@ -147,7 +160,22 @@ def before_request():
 
 @app.after_request
 def after_request(response):
-    """Registrar requisições longas e fazer limpeza"""
+    """Registrar requisições longas e fazer limpeza + garantir CORS headers"""
+    # Garantir headers CORS explícitos
+    origin = request.headers.get('Origin')
+    allowed_origins = [
+        "https://praias-sp-tools.vercel.app",
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://localhost:8080"
+    ]
+    
+    if origin in allowed_origins:
+        response.headers['Access-Control-Allow-Origin'] = origin
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+    
     duration = time.time() - request.start_time
     if duration > 5:
         print(f"⚠️ Requisição lenta: {request.endpoint} - {duration:.2f}s")
