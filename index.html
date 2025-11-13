@@ -554,8 +554,9 @@
           { role: "user", content: userMessage },
         ];
 
-        // Use a URL do seu backend Render
-        const backendUrl = window.location.origin + "/api/analyze-pdf";
+        // URL do backend Render (não usar window.location.origin pois aponta para Vercel)
+        const backendUrl =
+          "https://praiassp-tools.onrender.com/api/analyze-pdf";
 
         try {
           const response = await fetch(backendUrl, {
