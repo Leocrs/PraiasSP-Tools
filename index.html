@@ -269,9 +269,9 @@
 
       async function loadSettings() {
         try {
-          const model = safeLocalStorageGetItem("openai_model") || "gpt-4o";
+          const model = safeLocalStorageGetItem("openai_model") || "gpt-5";
           const maxTokens =
-            Number(safeLocalStorageGetItem("max_tokens")) || 4000;
+            Number(safeLocalStorageGetItem("max_tokens")) || 6000;
 
           document.getElementById("model").value = model;
           document.getElementById("maxTokens").value = maxTokens;
@@ -545,9 +545,9 @@
       async function callBackend(systemPrompt, userMessage) {
         console.log("🔗 Iniciando chamada ao backend...");
 
-        const model = document.getElementById("model").value || "gpt-4o";
+        const model = document.getElementById("model").value || "gpt-5";
         const maxTokens =
-          parseInt(document.getElementById("maxTokens").value) || 4000;
+          parseInt(document.getElementById("maxTokens").value) || 6000;
 
         const messages = [
           { role: "system", content: systemPrompt },
