@@ -1,233 +1,404 @@
-# 📋 STATUS DO PROJETO RIVIERA - O QUE TEM E O QUE FALTA
+# 📋 ROADMAP DETALHADO - RIVIERA (17 Nov - 1 Dez / 3 Semanas)
 
-**Data**: 13 Nov 2025 | **Projeto**: Automatização de Prestações de Contas - Riviera de São Lourenço
-
----
-
-## ✅ IMPLEMENTADO
-
-**Núcleo da Análise**
-
-- Upload de PDFs (Praias SP) funcionando
-- Análise com GPT-5 Responses API extraindo dados estruturados
-- JSON com saldos, despesas, aportes por obra
-- Parsing de PDF com pdfplumber
-- Salvamento automático em SQLite
-
-**Infraestrutura**
-
-- Backend em Render (online)
-- Frontend em Vercel (online)
-- 4 endpoints API em produção
-- Integração frontend/backend via CORS
-
-**Dados Financeiros**
-
-- Extração de saldos por obra ✓
-- Extração de despesas por obra ✓
-- Extração de aportes/receitas ✓
-- Comparativo previsto vs realizado ✓
-- Prompt CEO com 8 seções (tudo implementado)
-- Rateio de aportes no prompt (implementado mas não validado em produção)
+**Período**: Segunda 17 Nov → Domingo 1 Dez 2025 (21 dias)  
+**Projeto**: Automatização de Prestações de Contas - Riviera de São Lourenço  
+**Status**: Sistema 60% pronto, faltam outputs e consolidação
 
 ---
 
-## ❌ FALTA - SAÍDAS DO SISTEMA
+## 🎯 VISÃO GERAL
 
-### 1. Excel Consolidado (CRÍTICO - Não tem)
-
-O sistema extrai os dados mas não gera o arquivo Excel que deve ser entregue.
-
-**Necessário segundo a especificação**:
-
-- Arquivo: `Riviera_Consolidado_Base.xlsx`
-- Abas esperadas:
-  - `base_movimentos` (todos os movimentos extraídos)
-  - `consolidado_resumo` (saldos, despesas, aportes por obra)
-  - `orcamento_previsto` (orçamentos das obras)
-  - `custo_vs_previsto` (comparativo com desvios)
-- Formato: Consolidado com histórico cumulativo
-- Padrão: Seguir modelo existente `Riviera_Consolidado_Base_SIM_PLUS.xlsx`
-
-**Como está**: JSON na tela, não tem endpoint `/api/export-excel`  
-**Tempo para implementar**: 3-4h (openpyxl com formatação)
+| Semana                   | Foco                  | Horas   | Status     |
+| ------------------------ | --------------------- | ------- | ---------- |
+| **Semana 1** (17-23 Nov) | Validação + Excel     | 25h     | 📅 Próximo |
+| **Semana 2** (24-30 Nov) | HTML + Consolidação   | 28h     | 📅 Próximo |
+| **Semana 3** (1 Dez)     | Testes + Refinamentos | 15h     | 📅 Próximo |
+| **TOTAL**                | -                     | **68h** | -          |
 
 ---
 
-### 2. HTML Executivo (CRÍTICO - Não tem)
+## 📋 TAREFAS DETALHADAS
 
-O sistema mostra tabelas HTML básicas, não tem relatório executivo formatado.
+### SEMANA 1: VALIDAÇÃO + EXCEL (17-23 Nov) - 25h
 
-**Necessário segundo a especificação**:
+#### Dia 1-2 (Segunda-Terça) - VALIDAÇÃO DO RATEIO (4h)
 
-- Arquivo: `Riviera_Relatorio_YYYY-MM.html`
-- Conteúdo:
-  - Cards com resumo financeiro (saldos totais, aportes, despesas)
-  - Tabelas comparativas (obra a obra)
-  - Gráficos ou highlights de desvios
-  - Visual executivo (não tabelas simples)
-- Responsivo e pronto para imprimir
-- Link para download direto
+**O que**: Confirmar que rateio de aportes funciona corretamente em produção
 
-**Como está**: Tabelas HTML simples no dashboard, sem visual executivo  
-**Tempo para implementar**: 2-3h (template HTML + CSS profissional)
+**Tarefas técnicas**:
 
----
+- Deploy commit atual em Render
+- Testar com 3 PDFs reais (Praias SP) via Vercel
+- Verificar logs Render: "DEBUG: aportes_pool found"
+- Se funciona: avançar. Se não: debug de 2-3h
 
-### 3. Rateio de Aportes - Validação em Produção (IMPORTANTE)
+**Entregável**: Confirmação que JSON retorna 6 campos de rateio
 
-Seção 7 do prompt implementada, mas nunca testou com 3 PDFs reais.
+**Notas técnicas que o usuário não entendeu**:
 
-**Necessário segundo a especificação**:
-
-- Cálculo: Proporcional às despesas do mês
-- JSON retorna estrutura com:
-  - `valor_total_pool`
-  - `despesas_todas_obras`
-  - `despesas_esta_obra`
-  - `taxa_rateio_percentual`
-  - `valor_rateado_esta_obra`
-  - `metodo_calculo`
-
-**Como está**: Prompt implementado, debug logging adicionado  
-**O que falta**: 30 min de teste com 3 PDFs em Render para confirmar que JSON retorna certo  
-**Se não funcionar**: 2-3h para ajustar prompt
+- GPT-5 pode não retornar JSON estruturado se prompt não for claro
+- Debug logging está no código (linhas 925-960) para verificar presença
+- Se falhar, pode ser limitação do modelo ou parsing JSON
 
 ---
 
-### 4. Configuração de Parâmetros (IMPORTANTE - Não tem)
+#### Dia 2-5 (Terça-Sexta) - GERAR EXCEL CONSOLIDADO (10h)
 
-Especificação diz "configurável via aba parametros".
+**O que**: Criar endpoint que retorna `Riviera_Consolidado_Base.xlsx` pronto para download
 
-**Necessário**:
+**Tarefas técnicas**:
 
-- Interface para ajustar:
-  - Modelo de IA (GPT-4o vs GPT-5)
-  - max_tokens
-  - Taxa de rateio (se não for proporcional)
-  - Obras ativas
-  - Orçamentos por obra
-- Salvamento de configurações
+1. **Criar função generate_excel_report()** (3h)
 
-**Como está**: Dados no SQLite mas sem interface web  
-**Tempo para implementar**: 1-2h (formulário + endpoints)
+   - Usar openpyxl (já em requirements.txt)
+   - Aba 1: `base_movimentos` - todos os movimentos extraídos
+     - Colunas: competencia, obra, tipo (saldo/despesa/aporte), valor, data
+   - Aba 2: `consolidado_resumo` - agregado por obra
+     - Colunas: Obra, Saldo Final, Total Despesas, Total Aportes, Rentabilidade %
+   - Aba 3: `orcamento_previsto` - dados da tabela orcamento_previsto do BD
+     - Colunas: Obra, Orçamento Previsto, % Gasto
+   - Aba 4: `custo_vs_previsto` - comparativo
+     - Colunas: Obra, Orçado, Realizado, Desvio, Desvio %
+   - Formatação: cabeçalhos com cor, bordas, alinhamento
+   - Somas automáticas nas linhas finais
 
----
+2. **Criar endpoint POST /api/export-excel** (2h)
 
-### 5. Histórico Cumulativo Persistente (MÉDIO)
+   - Recebe parâmetros: competencia (Ex: "2024-11"), obras (lista ou all)
+   - Chama generate_excel_report()
+   - Retorna arquivo .xlsx com headers corretos para download
 
-"Consolidar em uma base cumulativa" - SQLite local não persiste em redeploy.
+3. **Adicionar botão Download no frontend** (2h)
 
-**Situação**:
+   - HTML: botão "Download Excel"
+   - JavaScript: POST para /api/export-excel
+   - Captura arquivo e faz download automático
 
-- Dados salvam OK durante sessão
-- Mas se fizer deploy em Render → SQLite é deletado
-- Histórico se perde
+4. **Testar com 3 PDFs** (3h)
+   - Fazer upload
+   - Clicar botão Download
+   - Verificar Excel gerado
+   - Validar formatação e dados
 
-**Solução**: Migrar SQLite → PostgreSQL (Render free tier)  
-**Tempo**: 2-3h  
-**Quando implementar**: Quando tiver múltiplas análises acumulando
+**Detalhes técnicos (o usuário pode não saber)**:
 
----
+- openpyxl permite criar abas, formatação, somas com formulas
+- response com `mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'` faz download
+- Importante: converter Decimal do SQLite para float antes de openpyxl
 
-### 6. Visual do Dashboard (IMPORTANTE)
-
-Atual está parecendo lista simples, sem visual executivo.
-
-**Necessário**:
-
-- Cards com resumos (cores, destaques, números grandes)
-- Gráficos ou visualizações (não só tabelas)
-- Layout profissional e limpo
-- Visual que pareça "relatório executivo"
-
-**Como está**: Tabelas HTML simples  
-**Tempo para implementar**: 2-3h (CSS + layout grid/flex melhorado)
+**Entregável**: Arquivo .xlsx formatado pronto para entregar
 
 ---
 
-## 📊 O QUE FALTA vs O QUE FOI PEDIDO
+#### Dia 5-7 (Sexta-Domingo) - CONSOLIDAÇÃO CUMULATIVA NO EXCEL (7h)
 
-| Requisito                       | Status                | Tipo              | Tempo        |
-| ------------------------------- | --------------------- | ----------------- | ------------ |
-| Ler PDFs Praias SP              | ✅ Feito              | Core              | -            |
-| Extrair despesas/aportes/saldos | ✅ Feito              | Core              | -            |
-| **Gerar Excel consolidado**     | ❌ Falta              | **Saída crítica** | **3-4h**     |
-| **Gerar HTML executivo**        | ❌ Falta              | **Saída crítica** | **2-3h**     |
-| Rateio proporcional às despesas | ⚠️ Impl., não testado | Core              | 30 min teste |
-| Consolidação cumulativa         | ⚠️ Local, não nuvem   | Dados             | 2-3h depois  |
-| Interface de parametros         | ❌ Falta              | Config            | 1-2h         |
-| Visual profissional             | ⚠️ Básico             | UI                | 2-3h         |
+**O que**: Excel não é só do mês, mas histórico acumulado (tipo SIM_PLUS)
+
+**Tarefas técnicas**:
+
+- Revisar modelo `Riviera_Consolidado_Base_SIM_PLUS.xlsx` existente
+- Modificar função generate_excel_report():
+  - base_movimentos deve ter TODOS os movimentos históricos (não só do mês)
+  - consolidado_resumo: saldos são FINAIS acumulados
+  - custo_vs_previsto: comparar acumulado vs orçamento total
+- Implementar lógica de "mês de referência" vs "histórico"
+- Atualizar documentação no código
+
+**Detalhes técnicos**:
+
+- SQLite tem competencia em movimentos, usar para filtrar período
+- Se competencia = NULL, considerar como histórico completo
+- Estrutura de pasta: uploads/relatorios/Riviera_Consolidado_Base_YYYY-MM.xlsx
+
+**Entregável**: Excel com histórico cumulativo funcionando
 
 ---
 
-## 🎯 PRÓXIMAS AÇÕES (ORDENADAS POR IMPORTÂNCIA)
+#### Dia 7-8 (Domingo-Segunda) - INTERFACE DE PARÂMETROS (4h)
 
-**1. Teste de Rateio (30 min - HOJE)**
+**O que**: Dashboard com formulário para ajustar configurações
 
-- Deploy em Render
-- Testar 3 PDFs
-- Verificar se `aportes_pool` aparece no JSON corretamente
-- Se funcionar: ✓ completo
-- Se não: 2-3h para fix
+**Tarefas**:
 
-**2. Gerar Excel Consolidado (3-4h - ESTA SEMANA)**
+- Criar form HTML simples:
+  - Campo: Modelo IA (dropdown: GPT-4o / GPT-5)
+  - Campo: max_tokens (número, 1000-12000)
+  - Campo: Taxa rateio padrão (se não proporcional)
+  - Campo: Obras ativas (checkboxes)
+- Salvar em SQLite tabela configuracoes
+- Carregar configurações ao iniciar
 
-- Endpoint `/api/export-excel`
-- Abas: base_movimentos, consolidado_resumo, orcamento_previsto, custo_vs_previsto
-- Formatação seguindo modelo existente
-- Botão download no frontend
+**Detalhes**:
 
-**3. Gerar HTML Executivo (2-3h - ESTA SEMANA)**
+- Backend: GET /api/configuracoes, POST /api/configuracoes
+- Validar valores antes de salvar
+- Aplicar na próxima análise
 
-- Endpoint `/api/export-html`
-- Cards com resumo financeiro
-- Tabelas comparativas
-- Visual profissional
-- Botão download no frontend
+**Entregável**: Formulário funcional no dashboard
 
-**4. Melhorar Visual do Dashboard (2-3h - PRÓXIMA SEMANA)**
+---
 
-- Cards com destaque para números principais
-- Gráficos ou visualizações
-- Layout grid/flex profissional
-- CSS melhorado
+### SEMANA 2: HTML EXECUTIVO + CONSOLIDAÇÃO (24-30 Nov) - 28h
 
-**5. Interface de Parâmetros (1-2h - PRÓXIMA SEMANA)**
+#### Dia 1-3 (Seg-Qua) - GERAR HTML EXECUTIVO (12h)
 
-- Formulário para ajustar configurações
-- Salvamento em banco
+**O que**: Criar relatório profissional `Riviera_Relatorio_YYYY-MM.html` pronto para imprimir
 
-**6. PostgreSQL (Quando escalar - 2-3h futuro)**
+**Tarefas técnicas**:
 
+1. **Criar template HTML profissional** (5h)
+
+   - Cabeçalho: Logo, mês/período, data geração
+   - Seção 1: Cards resumo
+     - Card Verde: "Saldo Total" (número grande)
+     - Card Azul: "Despesas Total" (número grande)
+     - Card Laranja: "Aportes Total" (número grande)
+   - Seção 2: Tabela detalhada obra a obra
+     - Obra | Saldo | Despesa | Aporte | Rateio (%) | Rentabilidade
+   - Seção 3: Gráfico ou destaque de desvios
+     - Se alguma obra tem desvio > 10%, destacar em vermelho
+   - Rodapé: Data, assinado por, data processamento
+   - Responsivo: quebra bem em A4 para imprimir
+
+2. **Criar função generate_html_report()** (4h)
+
+   - Ler dados do BD
+   - Montar string HTML com dados dinâmicos
+   - Retornar HTML completo
+
+3. **Criar endpoint POST /api/export-html** (2h)
+
+   - Recebe parâmetros: competencia
+   - Chama generate_html_report()
+   - Retorna arquivo .html para download
+   - Salva em pasta uploads/relatorios/
+
+4. **Adicionar botão Download HTML no frontend** (1h)
+   - Similar ao Excel
+
+**Detalhes técnicos**:
+
+- Usar template string ou Jinja2 para gerar HTML
+- CSS inline para garantir funcionamento em qualquer navegador
+- Media query @print para formato A4
+- Cores: Verde (#2ecc71), Azul (#3498db), Laranja (#f39c12), Vermelho (#e74c3c)
+
+**Entregável**: HTML executivo pronto para imprimir
+
+---
+
+#### Dia 3-5 (Qua-Sexta) - MELHORAR VISUAL DO DASHBOARD (10h)
+
+**O que**: Dashboard deixou de ser tabelas simples e virou executivo
+
+**Tarefas técnicas**:
+
+1. **Refazer layout frontend** (5h)
+
+   - Remover tabelas simples
+   - Adicionar 4 cards grandes no topo:
+     - Card 1: Saldo Total (verde)
+     - Card 2: Despesas Mês (azul)
+     - Card 3: Aportes (laranja)
+     - Card 4: Desvios (vermelho se > 10%)
+   - Adicionar mini gráfico ou visual de distribuição
+   - Layout: CSS Grid ou Flexbox, responsivo
+
+2. **Adicionar gráfico (opcional mas recomendado)** (3h)
+
+   - Usar Chart.js (leve, sem dependências pesadas)
+   - Gráfico de pizza: distribuição de aportes por obra
+   - Gráfico de barras: saldo x despesa x aporte
+
+3. **Testar responsividade** (2h)
+   - Desktop, tablet, mobile
+   - Imprimir em A4
+
+**Detalhes técnicos**:
+
+- CSS modern: Grid + Flexbox
+- Chart.js: npm install chart.js (ou CDN)
+- Cuidado: tabelas muito longas ficam ruins em mobile
+
+**Entregável**: Dashboard que parece "relatório executivo"
+
+---
+
+#### Dia 5-7 (Sexta-Domingo) - MIGRAR PARA POSTGRESQL (6h)
+
+**O que**: Dados persistem em nuvem, não se perdem em redeploy
+
+**Tarefas técnicas**:
+
+1. **Criar BD PostgreSQL no Render** (1h)
+
+   - Render Dashboard → Create Resource → Database
+   - Criar database, user, password
+   - Copiar connection string
+
+2. **Atualizar código para PostgreSQL** (2h)
+
+   - Trocar `sqlite3` por `psycopg2` (já em requirements.txt)
+   - Atualizar todas as queries (SQL é similar)
+   - Atualizar `init_db()` para PostgreSQL
+   - Testar conexão
+
+3. **Migrar dados SQLite → PostgreSQL** (2h)
+
+   - Exportar dados do SQLite
+   - Importar em PostgreSQL
+   - Verificar integridade
+
+4. **Deploy e testar persistência** (1h)
+   - Deploy em Render
+   - Redeploy novamente
+   - Verificar que dados continuam lá
+
+**Detalhes técnicos**:
+
+- psycopg2 é o driver Python para PostgreSQL
+- Connection string: postgresql://user:pass@host/database
+- Estrutura SQL é praticamente idêntica
+
+**Entregável**: Histórico persistente em nuvem
+
+---
+
+### SEMANA 3: TESTES + REFINAMENTOS (1-3 Dez) - 15h
+
+#### Dia 1-2 (Domingo-Segunda) - TESTES E2E (8h)
+
+**O que**: Sistema funcionando do início ao fim com dados reais
+
+**Tarefas**:
+
+- Preparar 10 PDFs diferentes (Praias SP reais ou simulados)
+- Fazer upload sequencial
+- Verificar:
+  - JSON extraído está correto
+  - Rateio calculado está correto
+  - Excel consolidado tem todos os dados
+  - HTML executivo tem formatação
+  - Histórico acumulado
+  - Desvios detectados corretamente
+- Tomar nota de bugs
+- Documentar tempo de processamento
+
+**Detalhes**:
+
+- Testar com diferentes tipos de PDF (POSIÇÃO FINANC + DESPESAS)
+- Testar com múltiplos uploads do mesmo período (deve consolidar)
+- Testar com períodos diferentes (deve manter histórico)
+
+**Entregável**: Relatório de testes com bugs encontrados
+
+---
+
+#### Dia 2-4 (Segunda-Quarta) - BUGS + REFINAMENTOS (7h)
+
+**O que**: Corrigir tudo que não funcionou nos testes
+
+**Tarefas**:
+
+- Listar bugs do relatório anterior
+- Priorizar: críticos (bloqueia uso), altos (ruim UX), baixos (cosmético)
+- Corrigir cada um
+- Retesta
+- Documentar
+
+**Exemplos comuns**:
+
+- Erro no cálculo de rateio
+- Excel não gera formatação certa
+- HTML cortado em imprimir
+- Dados não salvam em PostgreSQL
+
+**Entregável**: Sistema sem bugs conhecidos
+
+---
+
+## 📊 DETALHES TÉCNICOS QUE O USUÁRIO PODE NÃO SABER
+
+### 1. Diferença entre Chat Completions vs Responses API (GPT-5)
+
+- **Chat Completions**: Retorna `choices[0].message.content` (texto simples)
+- **Responses API**: Retorna `input`, `reasoning.content`, `text.content` (estruturado)
+- Sistema usa Responses API porque precisa de reasoning e estrutura
+
+### 2. Problema JSON com GPT-5
+
+- Às vezes GPT-5 adiciona markdown (`json ... `) antes do JSON
+- Código já faz limpeza, mas pode falhar se markdown estiver em lugar errado
+- Solution: validar e fazer try/except em json.loads()
+
+### 3. SQLite vs PostgreSQL
+
+- SQLite: arquivo local, perfeito para começar, perde dados em redeploy
+- PostgreSQL: servidor, persist dados, melhor para produção
+- Migration é relativamente simples (SQL é compatível)
+
+### 4. Performance de Análise
+
+- Cada PDF leva ~20-30 segundos (GPT-5 é lento)
+- Se tiver 10 PDFs: 200-300 segundos
+- Solução futura: processamento em background com fila
+
+### 5. Limites Render Free Tier
+
+- SQLite tem 100MB limite
+- PostgreSQL tem limite maior
+- Depois de ~1000 análises, considerar upgrade
+
+### 6. Desvio > 10% (Alerta)
+
+- Sistema precisa comparar: (Realizado - Previsto) / Previsto \* 100
+- Se > 10% ou < -10%: destacar em vermelho
+- Importante para o usuário ver riscos
+
+---
+
+## ⏰ CRONOGRAMA RESUMIDO
+
+```
+SEMANA 1 (17-23 Nov) - 25h
+├─ Seg-Ter: Validação Rateio (4h)
+├─ Ter-Sex: Excel Consolidado (10h)
+├─ Sex-Dom: Consolidação Cumulativa (7h)
+└─ Dom-Seg: Interface Parâmetros (4h)
+
+SEMANA 2 (24-30 Nov) - 28h
+├─ Seg-Qua: HTML Executivo (12h)
+├─ Qua-Sex: Visual Dashboard (10h)
+└─ Sex-Dom: PostgreSQL Persistência (6h)
+
+SEMANA 3 (1-3 Dez) - 15h
+├─ Dom-Seg: Testes E2E (8h)
+└─ Seg-Qua: Bugs + Refinamentos (7h)
+
+TEMPO TOTAL: 68h (pouco mais de 2 semanas full-time)
+```
+
+---
+
+## 📦 ARQUIVOS QUE SERÃO GERADOS
+
+```
+Após conclusão:
+├─ Riviera_Consolidado_Base.xlsx (Excel)
+├─ Riviera_Relatorio_YYYY-MM.html (HTML)
+├─ Dashboard melhorado (UI com cards)
+├─ PostgreSQL online (BD persistente)
+└─ Sistema 100% funcional conforme especificação
+```
+
+---
+
+## ✅ CRITÉRIO DE SUCESSO
+
+- Excel com 4 abas e todos os dados
+- HTML executivo imprimível
+- Dashboard com cards e visual profissional
 - Histórico persistente em nuvem
-- Implementar depois que tiver múltiplas análises
-
----
-
-## 💼 RESUMO EXECUTIVO
-
-Sistema extrai dados financeiros corretamente com GPT-5. Falta gerar as saídas esperadas (Excel e HTML executivo) e melhorar o visual do dashboard.
-
-**Bloqueadores para uso em produção**:
-
-1. Excel consolidado (3-4h)
-2. HTML executivo (2-3h)
-3. Validação rateio (30 min)
-
-**Tempo total até ficar 100% conforme especificação**: ~8-10h
-
----
-
-**Próximo passo**: Fazer teste de 30 min com 3 PDFs para validar rateio
-
-- Dados financeiros (saldos, despesas, aportes) ✅
-- Dashboard HTML ✅
-- API estruturada ✅
-- Em produção ✅
-
-Falta testar rateio (30 min). Depois disso → 100% pronto para CEO."
-
----
-
-**Próximo passo**: Teste rápido de 30 min com 3 PDFs
+- 10 testes E2E passados
+- 0 bugs críticos
+- Sistema pronto para usar
