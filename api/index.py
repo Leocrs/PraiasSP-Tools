@@ -76,10 +76,10 @@ def init_db():
         
         conn.commit()
         conn.close()
-        print("✅ Banco de dados inicializado com sucesso")
+        print("[OK] Banco de dados inicializado com sucesso")
         return True
     except Exception as e:
-        print(f"❌ Erro ao inicializar banco: {e}")
+        print(f"[ERROR] Erro ao inicializar banco: {e}")
         return False
 
 # Pool de conexões para SQLite
@@ -95,7 +95,7 @@ def get_db_connection():
     except Exception as e:
         if conn:
             conn.rollback()
-        print(f"❌ Erro na conexão com banco: {e}")
+        print(f"[ERROR] Erro na conexão com banco: {e}")
         raise
     finally:
         if conn:
@@ -180,7 +180,7 @@ def after_request(response):
     
     duration = time.time() - request.start_time
     if duration > 5:
-        print(f"⚠️ Requisição lenta: {request.endpoint} - {duration:.2f}s")
+        print(f"[WARN]️ Requisição lenta: {request.endpoint} - {duration:.2f}s")
     return response
 
 @app.teardown_appcontext
@@ -327,12 +327,12 @@ def process_single_pdf(file_obj, model):
                 'message': 'PDF sem texto extraível'
             }
         
-        print(f"    ✅ Texto extraído: {filename}")
+        print(f"    [OK] Texto extraído: {filename}")
         
         # Analisar com OpenAI
         analysis = analyze_with_openai(pdf_text, document_type='relatório financeiro', model=model)
         
-        print(f"    ✅ Análise concluída: {filename}")
+        print(f"    [OK] Análise concluída: {filename}")
         
         # Salvar no banco
         save_analysis_to_db(analysis)
@@ -345,7 +345,7 @@ def process_single_pdf(file_obj, model):
         }
     
     except Exception as e:
-        print(f"    ❌ Erro em {file_obj.filename}: {str(e)[:100]}")
+        print(f"    [ERROR] Erro em {file_obj.filename}: {str(e)[:100]}")
         return {
             'status': 'error',
             'filename': file_obj.filename,
@@ -385,7 +385,7 @@ def upload_pdf():
         print(f"\n{'='*60}")
         print(f"📦 PROCESSAMENTO EM PARALELO DE {len(files)} PDFs")
         print(f"🤖 Modelo: {model}")
-        print(f"⏱️ Início: {datetime.now().strftime('%H:%M:%S')}")
+        print(f"[TIME] Início: {datetime.now().strftime('%H:%M:%S')}")
         print(f"{'='*60}")
         
         # Validar e filtrar arquivos
@@ -407,11 +407,11 @@ def upload_pdf():
             
             arquivos_validos.append(file)
         
-        print(f"✅ {len(arquivos_validos)} arquivo(s) válido(s)")
+        print(f"[OK] {len(arquivos_validos)} arquivo(s) válido(s)")
         if erros_validacao:
-            print(f"⚠️ {len(erros_validacao)} arquivo(s) descartado(s)")
+            print(f"[WARN]️ {len(erros_validacao)} arquivo(s) descartado(s)")
         
-        # ⭐ PROCESSAMENTO PARALELO com ThreadPoolExecutor
+        # [STAR] PROCESSAMENTO PARALELO com ThreadPoolExecutor
         resultados = []
         erros = erros_validacao.copy()
         
@@ -442,11 +442,11 @@ def upload_pdf():
         processing_time = time.time() - start_time
         
         print(f"\n{'='*60}")
-        print(f"✅ Processamento completo!")
+        print(f"[OK] Processamento completo!")
         print(f"📊 Resultados: {len([r for r in resultados if r['status'] == 'success'])} sucesso(s)")
         if erros:
-            print(f"❌ Erros: {len(erros)}")
-        print(f"⏱️ Tempo total: {processing_time:.2f}s")
+            print(f"[ERROR] Erros: {len(erros)}")
+        print(f"[TIME] Tempo total: {processing_time:.2f}s")
         print(f"{'='*60}\n")
         
         return jsonify({
@@ -460,8 +460,8 @@ def upload_pdf():
     
     except Exception as e:
         processing_time = time.time() - start_time
-        print(f"❌ ERRO GERAL: {str(e)}")
-        print(f"⏱️ Tempo até erro: {processing_time:.2f}s")
+        print(f"[ERROR] ERRO GERAL: {str(e)}")
+        print(f"[TIME] Tempo até erro: {processing_time:.2f}s")
         return jsonify({
             'status': 'error',
             'message': f'Erro ao processar: {str(e)[:200]}',
@@ -591,7 +591,7 @@ def extract_pdf_text(file):
             text += page.extract_text() + "\n"
         return text.strip()
     except Exception as e:
-        print(f"❌ Erro ao extrair PDF: {e}")
+        print(f"[ERROR] Erro ao extrair PDF: {e}")
         raise
 
 # ================================
@@ -628,7 +628,7 @@ def process_openai_request(messages, model, max_tokens):
         print(f"🔄 Preparando requisição para {model}...")
         print(f"   Max Tokens: {max_tokens}")
         
-        # ⭐ GPT-5 usa Responses API, não Chat Completions!
+        # [STAR] GPT-5 usa Responses API, não Chat Completions!
         if model.startswith('gpt-5'):
             print("🔄 Usando Responses API para GPT-5...")
             
@@ -648,17 +648,17 @@ def process_openai_request(messages, model, max_tokens):
             print(f"📝 User message length: {len(user_message)} chars")
             print(f"📝 Combined input length: {len(combined_input)} chars")
             
-            # ✅ Responses API com parâmetros corretos para GPT-5
+            # [OK] Responses API com parâmetros corretos para GPT-5
             # IMPORTANTE: reasoning com effort LOW para economizar tempo e memória!
             response = openai_client.responses.create(
                 model=model,
                 input=combined_input,
                 max_output_tokens=max_tokens,
-                reasoning={"effort": "low"},  # ⭐ LOW, não HIGH (evita timeout/memória)
+                reasoning={"effort": "low"},  # [STAR] LOW, não HIGH (evita timeout/memória)
                 text={"verbosity": "high"}
             )
             
-            print(f"✅ Resposta GPT-5 recebida | Output tokens: {max_tokens}")
+            print(f"[OK] Resposta GPT-5 recebida | Output tokens: {max_tokens}")
             return CompatResponse(response.output_text), None
         
         else:
@@ -674,7 +674,7 @@ def process_openai_request(messages, model, max_tokens):
                     temperature=0.7,
                     timeout=OPENAI_TIMEOUT
                 )
-                print(f"✅ Usando max_completion_tokens: {max_tokens}")
+                print(f"[OK] Usando max_completion_tokens: {max_tokens}")
                 return response, None
             except TypeError:
                 # Fallback para max_tokens (SDK antigo ou modelos antigos)
@@ -685,11 +685,11 @@ def process_openai_request(messages, model, max_tokens):
                     temperature=0.7,
                     timeout=OPENAI_TIMEOUT
                 )
-                print(f"✅ Usando max_tokens (compatibilidade): {max_tokens}")
+                print(f"[OK] Usando max_tokens (compatibilidade): {max_tokens}")
                 return response, None
     
     except Exception as e:
-        print(f"❌ ERRO em process_openai_request: {type(e).__name__}: {str(e)}")
+        print(f"[ERROR] ERRO em process_openai_request: {type(e).__name__}: {str(e)}")
         import traceback
         traceback.print_exc()
         return None, str(e)
@@ -697,7 +697,7 @@ def process_openai_request(messages, model, max_tokens):
 def analyze_with_openai(pdf_text, document_type='relatório', model='gpt-4o'):
     """Analisar texto com OpenAI (GPT-5, GPT-4o, etc) - Lógica CEO Financeiro"""
     try:
-        prompt = f"""🎯 VOCÊ É UM AUDITOR FINANCEIRO SÊNIOR - RIVIERA EMPREENDIMENTOS
+        prompt = """[AUDITOR] VOCÊ É UM AUDITOR FINANCEIRO SÊNIOR - RIVIERA EMPREENDIMENTOS
 
 MISSÃO CRÍTICA:
 Processar PDFs mensais de Praias SP com PRECISÃO ABSOLUTA. Cada número errado custará MILHARES.
@@ -715,22 +715,22 @@ IDENTIFICAÇÃO DO DOCUMENTO:
 EXTRAÇÃO OBRIGATÓRIA DE CAMPOS:
 ═════════════════════════════════════════════════════════════════════════════
 
-1️⃣ COMPETÊNCIA (data do relatório)
+[1] COMPETÊNCIA (data do relatório)
    - Procure: "SETEMBRO 25", "SET 2025", "09/2025", "setembro/2025"
    - CONVERTA SEMPRE para: "09/2025"
    - SE NÃO ENCONTRAR: return erro "Competência não encontrada"
 
-2️⃣ CÓDIGO DA OBRA (identificador único)
+[2] CÓDIGO DA OBRA (identificador único)
    - Procure no título: 562, 601, 603, 604, 616, BCO, etc
    - Se houver múltiplos codes (ex: "562 601 603 e 604"), SEPARE EM 4 EXTRAÇÕES
    - SE NÃO ENCONTRAR: return erro "Código não encontrado"
 
-3️⃣ SALDO INICIAL (sempre em número com 2 decimais)
+[3] SALDO INICIAL (sempre em número com 2 decimais)
    - Procure: "Saldo em 31/08/2025", "Saldo Inicial", "Saldo Anterior"
    - Format: 1234567.89 (sem R$, sem separadores de milhar)
    - SE NÃO ENCONTRAR: "não_informado"
 
-4️⃣ DESPESAS DETALHADAS (CRÍTICO - não aproxime)
+[4] DESPESAS DETALHADAS (CRÍTICO - não aproxime)
    - Procure TODAS as linhas com valores negativos ou etiquetadas "Despesa"
    - PARA CADA DESPESA extrait:
      * descricao: "Fornecedor X - Serviço Y"
@@ -739,22 +739,22 @@ EXTRAÇÃO OBRIGATÓRIA DE CAMPOS:
      * fornecedor: "Nome Exato do Fornecedor"
    - TOTALIZE: despesas_total = SUM(todas despesas)
    - VALIDAR: Se há tabelas, leia TODA a coluna de valores
-   - SE HOUVER DÚVIDA: indique com "⚠️" no JSON
+   - SE HOUVER DÚVIDA: indique com "[WARN]️" no JSON
 
-5️⃣ RECEITAS (tudo que entra)
+[5] RECEITAS (tudo que entra)
    - Aportes do pool: valor_exato
    - Rentabilidade: valor_exato
    - Reembolsos: valor_exato
    - TOTAL DE RECEITAS: receitas_total = SUM(todas receitas)
 
-6️⃣ SALDO FINAL (obrigatório e preciso)
+[6] SALDO FINAL (obrigatório e preciso)
    - Procure: "Saldo em 30/09/2025", "Saldo Disponível", "Saldo Final"
    - Format: 1234567.89
    - VALIDAR: Saldo_Final ≈ Saldo_Inicial + Receitas - Despesas (±R$1,00)
    - SE DIVERGÊNCIA > R$1,00: adicione flag "saldo_auditoria_necessaria"
 
-7️⃣ RATEIO DE APORTES (CÁLCULO OBRIGATÓRIO)
-   - ⭐ SE ENCONTRAR "POSIÇÃO FINANCEIRA" COM APORTES RECEBIDOS:
+[7] RATEIO DE APORTES (CÁLCULO OBRIGATÓRIO)
+   - [STAR] SE ENCONTRAR "POSIÇÃO FINANCEIRA" COM APORTES RECEBIDOS:
      * EXTRAIA: aportes_recebidos_total (valor exato dos aportes que entraram)
      * EXTRAIA: despesas_desta_obra (total de despesas desta obra no mês)
      * PROCURE NO MESMO RELATÓRIO OU CONSOLIDADO: despesas de TODAS as obras do mês
@@ -763,30 +763,30 @@ EXTRAÇÃO OBRIGATÓRIA DE CAMPOS:
      * taxa_rateio (%) = despesas_desta_obra / total_despesas_todas_obras
      
    - CALCULE APORTE RATEADO:
-     * aporte_rateado = aportes_recebidos_total × taxa_rateio (%)
+     * aporte_rateado = aportes_recebidos_total * taxa_rateio (%)
    
    - EXEMPLO OBRIGATÓRIO:
      * Despesas Obra 616: R$ 82,60
      * Despesas Shopping (603+637): R$ 7.319.079,56
      * TOTAL DESPESAS MÊS: R$ 7.319.162,16
-     * Taxa Rateio Obra 616: 82,60 ÷ 7.319.162,16 = 0.001129 (ou 0.1129%)
+     * Taxa Rateio Obra 616: 82,60 / 7.319.162,16 = 0.001129 (ou 0.1129%)
      * Aportes Recebidos Pool: R$ 5.483.433,37
-     * ✅ Aporte Rateado Obra 616: R$ 5.483.433,37 × 0.001129 = R$ 61,87
+     * [OK] Aporte Rateado Obra 616: R$ 5.483.433,37 * 0.001129 = R$ 61,87
    
-   - ⭐ RETORNE NO JSON: objeto "aportes_pool" COM TODOS estes campos (OBRIGATÓRIO):
+   - [STAR] RETORNE NO JSON: objeto "aportes_pool" COM TODOS estes campos (OBRIGATÓRIO):
      {
        "valor_total_pool": 5483433.37,              # Aportes que entraram
        "despesas_todas_obras": 7319162.16,          # Total de despesas consolidadas
        "despesas_esta_obra": 82.60,                 # Despesas desta obra
-       "taxa_rateio_percentual": 0.001129,          # Percentual (não %!)
+       "taxa_rateio_percentual": 0.001129,          # Percentual (nao percentual)
        "valor_rateado_esta_obra": 61.87,            # Valor que cabe a esta obra
-       "metodo_calculo": "Proporcional às despesas mensais"
+       "metodo_calculo": "Proporcional as despesas mensais"
      }
    
-   - ⚠️ SE NÃO ENCONTRAR APORTES RECEBIDOS: use "não_informado" e flag de alerta
-   - ⚠️ NUNCA aproxime: sempre valores EXATOS do PDF
+   - [WARN] SE NAO ENCONTRAR APORTES RECEBIDOS: use "nao_informado" e flag de alerta
+   - [WARN] NUNCA aproxime: sempre valores EXATOS do PDF
 
-8️⃣ CONCILIAÇÃO BANCÁRIA (bandeira vermelha)
+[8] CONCILIACAO BANCARIA (bandeira vermelha)
    - Procure: "Bradesco", "Saldo Banco", "Conciliado com"
    - EXTRAIA: saldo_banco_oficial, diferenca_conciliacao
    - SE diferenca > R$ 100: flag "diferenca_relevante_investigar"
@@ -794,16 +794,16 @@ EXTRAÇÃO OBRIGATÓRIA DE CAMPOS:
 ═════════════════════════════════════════════════════════════════════════════
 
 REGRAS NÃO-NEGOCIÁVEIS:
-❌ NÃO retorne narrativa, APENAS JSON
-❌ NÃO aproxime valores (use valores exatos do PDF)
-❌ NÃO agregue obras diferentes (cada código é uma extração separada)
-❌ NÃO ignore tabelas (leia cada linha)
-❌ NÃO esqueça decimais (sempre XX,XX)
-❌ SE NÃO ENCONTRAR CAMPO: use "não_informado" COM FLAG DE ALERTA
+[ERROR] NÃO retorne narrativa, APENAS JSON
+[ERROR] NÃO aproxime valores (use valores exatos do PDF)
+[ERROR] NÃO agregue obras diferentes (cada código é uma extração separada)
+[ERROR] NÃO ignore tabelas (leia cada linha)
+[ERROR] NÃO esqueça decimais (sempre XX,XX)
+[ERROR] SE NÃO ENCONTRAR CAMPO: use "não_informado" COM FLAG DE ALERTA
 
 ═════════════════════════════════════════════════════════════════════════════
 
-⭐ INSTRUÇÃO CRÍTICA: APORTES_POOL É OBRIGATÓRIO
+[STAR] INSTRUÇÃO CRÍTICA: APORTES_POOL É OBRIGATÓRIO
 - O CAMPO "aportes_pool" DEVE estar SEMPRE presente no JSON
 - Todos os 6 subcampos DEVEM ser preenchidos com valores numéricos válidos:
   * valor_total_pool (nunca null)
@@ -856,23 +856,26 @@ RETORNE ESTE JSON (sem markdown, sem explicações):
       "alertas": []
     }},
     "observacoes": "Texto se houver algo relevante",
-    "qualidade_extracao": "✅ Completa" | "⚠️ Parcial - campos faltantes" | "❌ Erro - campo crítico ausente"
+    "qualidade_extracao": "[OK] Completa" | "[WARN]️ Parcial - campos faltantes" | "[ERROR] Erro - campo crítico ausente"
   }}
 ]
 
 ═════════════════════════════════════════════════════════════════════════════
 
 DOCUMENTO A PROCESSAR:
-{pdf_text}"""
+"""
+        
+        # Concatenar prompt com PDF text
+        full_prompt = prompt + pdf_text
         
         messages = [
             {
                 "role": "system",
-                "content": "VOCÊ DEVE RETORNAR APENAS JSON VÁLIDO. NÃO RETORNE MARKDOWN, NÃO RETORNE NARRATIVA, NÃO RETORNE EXPLICAÇÕES. APENAS JSON PURO E VÁLIDO."
+                "content": "VOCE DEVE RETORNAR APENAS JSON VALIDO. NAO RETORNE MARKDOWN, NAO RETORNE NARRATIVA, NAO RETORNE EXPLICACOES. APENAS JSON PURO E VALIDO."
             },
             {
                 "role": "user",
-                "content": prompt
+                "content": full_prompt
             }
         ]
         
@@ -881,13 +884,13 @@ DOCUMENTO A PROCESSAR:
         response, error = process_openai_request(messages, model, max_tokens=6000)
         
         if error:
-            print(f"❌ Erro ao chamar OpenAI: {error}")
+            print(f"[ERROR] Erro ao chamar OpenAI: {error}")
             raise ValueError(f"Erro na API OpenAI: {error}")
         
         # Extrair conteúdo
         response_text = response.choices[0].message.content.strip()
         
-        # ⭐ AGRESSIVAMENTE remover markdown e narrativa
+        # [STAR] AGRESSIVAMENTE remover markdown e narrativa
         print(f"📝 Resposta bruta ({len(response_text)} chars): {response_text[:100]}...")
         
         # Remover markdown code blocks
@@ -908,19 +911,19 @@ DOCUMENTO A PROCESSAR:
             start_idx = response_text.find('{')
         
         if start_idx > 0:
-            print(f"⚠️ Encontrou narrativa antes do JSON. Removendo primeiros {start_idx} chars...")
+            print(f"[WARN]️ Encontrou narrativa antes do JSON. Removendo primeiros {start_idx} chars...")
             response_text = response_text[start_idx:]
         
         # Procurar pelo final do JSON
         end_idx = max(response_text.rfind(']'), response_text.rfind('}'))
         if end_idx > 0 and end_idx < len(response_text) - 1:
-            print(f"⚠️ Encontrou narrativa após JSON. Removendo últimos {len(response_text) - end_idx - 1} chars...")
+            print(f"[WARN]️ Encontrou narrativa após JSON. Removendo últimos {len(response_text) - end_idx - 1} chars...")
             response_text = response_text[:end_idx + 1]
         
         # Tentar parse JSON com retry
         try:
             result = json.loads(response_text)
-            print(f"✅ JSON parseado com sucesso!")
+            print(f"[OK] JSON parseado com sucesso!")
             
             # 🔍 DEBUG: Verificar presença de aportes_pool
             print("\n" + "="*80)
@@ -936,19 +939,19 @@ DOCUMENTO A PROCESSAR:
             # Verificar aportes_pool
             if 'aportes_pool' in analysis_obj:
                 aportes = analysis_obj['aportes_pool']
-                print(f"\n✅ aportes_pool PRESENTE! Verificando campos:")
+                print(f"\n[OK] aportes_pool PRESENTE! Verificando campos:")
                 campos_esperados = ['valor_total_pool', 'despesas_todas_obras', 'despesas_esta_obra', 'taxa_rateio_percentual', 'valor_rateado_esta_obra', 'metodo_calculo']
                 for campo in campos_esperados:
                     if campo in aportes:
-                        print(f"   ✅ {campo}: {aportes[campo]}")
+                        print(f"   [OK] {campo}: {aportes[campo]}")
                     else:
-                        print(f"   ❌ {campo}: FALTANDO!")
+                        print(f"   [ERROR] {campo}: FALTANDO!")
             else:
-                print(f"\n❌ aportes_pool NÃO ENCONTRADO!")
+                print(f"\n[ERROR] aportes_pool NÃO ENCONTRADO!")
                 print(f"   Procurando em subníveis...")
                 for key, value in analysis_obj.items():
                     if isinstance(value, dict) and 'valor_total_pool' in value:
-                        print(f"   ⚠️ Encontrado em '{key}': {value}")
+                        print(f"   [WARN]️ Encontrado em '{key}': {value}")
             
             print("\n💾 JSON COMPLETO (primeiras 500 chars):")
             print(json.dumps(result, indent=2, ensure_ascii=False)[:500])
@@ -956,7 +959,7 @@ DOCUMENTO A PROCESSAR:
             
             return result
         except json.JSONDecodeError as e:
-            print(f"❌ Erro ao fazer parse JSON na primeira tentativa: {e}")
+            print(f"[ERROR] Erro ao fazer parse JSON na primeira tentativa: {e}")
             print(f"📄 Conteúdo: {response_text[:200]}...")
             
             # RETRY: Se for array, tentar extrair primeiro elemento
@@ -967,10 +970,10 @@ DOCUMENTO A PROCESSAR:
                 raise ValueError(f"Resposta não é JSON válido. Resposta: {response_text[:500]}")
     
     except json.JSONDecodeError as e:
-        print(f"❌ Erro ao fazer parse JSON da resposta OpenAI: {e}")
+        print(f"[ERROR] Erro ao fazer parse JSON da resposta OpenAI: {e}")
         raise ValueError(f"Resposta inválida do OpenAI: {str(e)}")
     except Exception as e:
-        print(f"❌ Erro ao analisar com OpenAI: {e}")
+        print(f"[ERROR] Erro ao analisar com OpenAI: {e}")
         raise
 
 def validate_aportes_pool(analysis):
@@ -995,7 +998,7 @@ def validate_aportes_pool(analysis):
     missing_fields = [f for f in required_fields if f not in aportes_pool or aportes_pool[f] is None]
     
     if missing_fields:
-        print(f"⚠️ ALERTA: Campos faltantes em aportes_pool: {missing_fields}")
+        print(f"[WARN]️ ALERTA: Campos faltantes em aportes_pool: {missing_fields}")
         
         # Adicionar flag de alerta
         if 'validacoes' not in analysis:
@@ -1005,13 +1008,13 @@ def validate_aportes_pool(analysis):
             analysis['validacoes']['alertas'] = []
         
         analysis['validacoes']['alertas'].append(
-            f"❌ RATEIO INCOMPLETO: Faltam campos: {', '.join(missing_fields)}"
+            f"[ERROR] RATEIO INCOMPLETO: Faltam campos: {', '.join(missing_fields)}"
         )
         
         print(f"🚨 Validação de aportes_pool falhou!")
         return False
     else:
-        print(f"✅ Validação de aportes_pool: SUCESSO - Todos os 6 campos presentes")
+        print(f"[OK] Validação de aportes_pool: SUCESSO - Todos os 6 campos presentes")
         return True
 
 def save_analysis_to_db(analysis):
@@ -1050,7 +1053,7 @@ def save_analysis_to_db(analysis):
         
         return True
     except Exception as e:
-        print(f"❌ Erro ao salvar análise no banco: {e}")
+        print(f"[ERROR] Erro ao salvar análise no banco: {e}")
         raise
 
 @app.route('/api/analyze-pdf', methods=['POST'])
@@ -1105,7 +1108,7 @@ def analyze_pdf_endpoint():
         # Validar modelo
         modelos_suportados = ['gpt-5', 'gpt-4o', 'gpt-4', 'gpt-3.5-turbo']
         if model not in modelos_suportados:
-            print(f"⚠️ Modelo '{model}' não suportado. Usando gpt-4o.")
+            print(f"[WARN]️ Modelo '{model}' não suportado. Usando gpt-4o.")
             model = 'gpt-4o'
         
         print(f"🔧 Modelo selecionado: {model}")
@@ -1120,7 +1123,7 @@ def analyze_pdf_endpoint():
                 'message': 'PDF não contém texto extraível'
             }), 400
         
-        print(f"✅ Texto extraído ({len(pdf_text)} caracteres)")
+        print(f"[OK] Texto extraído ({len(pdf_text)} caracteres)")
         
         # 2. Analisar com OpenAI (usando modelo selecionado)
         print(f"🤖 Analisando com {model}...")
@@ -1130,13 +1133,13 @@ def analyze_pdf_endpoint():
         print("🔍 Validando rateio de aportes...")
         validate_aportes_pool(analysis)
         
-        print(f"✅ Análise concluída: {analysis.get('codigo_obra')} - {analysis.get('competencia')}")
+        print(f"[OK] Análise concluída: {analysis.get('codigo_obra')} - {analysis.get('competencia')}")
         
         # 3. Salvar no banco de dados
         print("💾 Salvando no banco de dados...")
         save_analysis_to_db(analysis)
         
-        print("✅ Análise salva com sucesso!")
+        print("[OK] Análise salva com sucesso!")
         
         return jsonify({
             'status': 'success',
@@ -1151,7 +1154,7 @@ def analyze_pdf_endpoint():
             'message': str(e)
         }), 400
     except Exception as e:
-        print(f"❌ Erro ao processar PDF: {str(e)}")
+        print(f"[ERROR] Erro ao processar PDF: {str(e)}")
         return jsonify({
             'status': 'error',
             'message': f'Erro ao processar PDF: {str(e)}'
@@ -1222,7 +1225,7 @@ def chat_endpoint():
         # Validação 4: Modelo suportado
         modelos_suportados = ['gpt-5', 'gpt-4o', 'gpt-4', 'gpt-3.5-turbo']
         if model not in modelos_suportados:
-            print(f"⚠️ Modelo '{model}' não suportado. Usando padrão: gpt-5")
+            print(f"[WARN]️ Modelo '{model}' não suportado. Usando padrão: gpt-5")
             model = 'gpt-5'
         
         # CRÍTICO: Limites por modelo (copiar exatamente da referência)
@@ -1245,21 +1248,21 @@ def chat_endpoint():
         
         # Validação 5: Erro na API OpenAI
         if error:
-            print(f"❌ ERRO na API OpenAI: {error}")
+            print(f"[ERROR] ERRO na API OpenAI: {error}")
             return jsonify({
                 'error': f'Erro na API OpenAI: {error}'
             }), 500
         
         # Validação 6: Response nulo
         if not response:
-            print("❌ Response é None!")
+            print("[ERROR] Response é None!")
             return jsonify({
                 'error': 'Resposta nula da OpenAI'
             }), 500
         
         # Validação 7: Choices vazio
         if not response.choices:
-            print("❌ Response.choices vazio!")
+            print("[ERROR] Response.choices vazio!")
             return jsonify({
                 'error': 'Resposta vazia da OpenAI (choices vazio)'
             }), 500
@@ -1267,16 +1270,16 @@ def chat_endpoint():
         # Validação 8: Content vazio ou None
         content = response.choices[0].message.content
         if not content:
-            print("⚠️ WARNING: Content é None ou vazio!")
+            print("[WARN]️ WARNING: Content é None ou vazio!")
             print(f"   Finish reason: {response.choices[0].finish_reason}")
             content = "(Resposta vazia recebida da OpenAI)"
         
         processing_time = time.time() - start_time
         
         # Logging de sucesso
-        print("✅ Resposta da OpenAI recebida com sucesso!")
+        print("[OK] Resposta da OpenAI recebida com sucesso!")
         print(f"📄 Tamanho da resposta: {len(content)} caracteres")
-        print(f"⏱️ Tempo de processamento: {processing_time:.2f}s")
+        print(f"[TIME] Tempo de processamento: {processing_time:.2f}s")
         print("="*60 + "\n")
         
         return jsonify({
@@ -1292,8 +1295,8 @@ def chat_endpoint():
     except Exception as e:
         processing_time = time.time() - start_time
         error_msg = f"Erro interno: {str(e)}"
-        print(f"❌ ERRO GERAL: {error_msg}")
-        print(f"⏱️ Tempo até erro: {processing_time:.2f}s")
+        print(f"[ERROR] ERRO GERAL: {error_msg}")
+        print(f"[TIME] Tempo até erro: {processing_time:.2f}s")
         print("="*60 + "\n")
         import traceback
         traceback.print_exc()
@@ -1401,7 +1404,7 @@ def get_settings():
                 'cached': True
             })
     except Exception as e:
-        print(f"❌ Erro ao buscar configurações: {e}")
+        print(f"[ERROR] Erro ao buscar configurações: {e}")
         return jsonify({
             'modelo': 'gpt-5',
             'max_tokens': 6000,
@@ -1442,7 +1445,7 @@ def save_settings():
             ''', (api_key, modelo, max_tokens, chunk_size))
             conn.commit()
         
-        print(f"✅ Configurações salvas para API Key: {api_key[:10]}...")
+        print(f"[OK] Configurações salvas para API Key: {api_key[:10]}...")
         return jsonify({
             'success': True,
             'message': 'Configurações salvas com sucesso',
@@ -1451,7 +1454,7 @@ def save_settings():
             'chunk_size': chunk_size
         })
     except Exception as e:
-        print(f"❌ Erro ao salvar configurações: {e}")
+        print(f"[ERROR] Erro ao salvar configurações: {e}")
         return jsonify({'error': str(e)}), 500
 
 # ================================

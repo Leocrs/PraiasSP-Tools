@@ -7,7 +7,7 @@
 
 ## ✅ JÁ IMPLEMENTADO E FUNCIONANDO (CORE DO SISTEMA)
 
-### 🔥 O QUE O CEO TEM AGORA
+### O QUE TEM AGORA
 
 **1. Upload e Análise com GPT-5**
 
@@ -50,7 +50,7 @@
 - [x] CORS com OPTIONS preflight
 - [x] 3 deploys bem-sucedidos em produção
 
-**6. CEO Prompt (8 Seções) - Tudo Implementado**
+**6. Prompt (8 Seções) - Tudo Implementado**
 
 - [x] Seção 1: Contexto e Objetivo
 - [x] Seção 2: Extração de Saldos (funciona)
@@ -77,7 +77,7 @@
 1. Deploy commit atual em Render
 2. Testar 3 PDFs via Vercel (frontend)
 3. Verificar logs: aparece "aportes_pool" no JSON?
-4. Se SIM → pronto para CEO
+4. Se SIM → pronto
 5. Se NÃO → ajustar prompt e retesta
 
 ---
@@ -87,7 +87,7 @@
 **Status**: Pode ser adicionado depois  
 **O que falta**: Endpoint `/api/export-excel`  
 **Tempo**: 2-3h  
-**Nota**: CEO consegue ver tudo em JSON e tabelas HTML
+**Nota**: consegue ver tudo em JSON e tabelas HTML
 
 ---
 
@@ -123,9 +123,9 @@
 
 **ESTA SEMANA (Opcional)**:
 
-- Se CEO pedir Excel → 2-3h para implementar
+- Excel → 2-3h para implementar
 
-**PRÓXIMO MÊS (Quando escalar)**:
+**PRÓXIMO Semana (Quando escalar)**:
 
 - Migrar SQLite para PostgreSQL (30 min)
 
@@ -142,7 +142,7 @@
 
 ---
 
-## 💬 MENSAGEM PARA O CHEFE
+## 💬 MENSAGEM
 
 "Sistema está pronto:
 
