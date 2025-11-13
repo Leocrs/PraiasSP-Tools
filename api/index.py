@@ -921,6 +921,39 @@ DOCUMENTO A PROCESSAR:
         try:
             result = json.loads(response_text)
             print(f"✅ JSON parseado com sucesso!")
+            
+            # 🔍 DEBUG: Verificar presença de aportes_pool
+            print("\n" + "="*80)
+            print("🔍 DEBUG: ANÁLISE DO JSON RETORNADO")
+            print("="*80)
+            
+            # Se for array, pega primeiro elemento
+            analysis_obj = result[0] if isinstance(result, list) else result
+            
+            print(f"📊 Tipo de resultado: {'array' if isinstance(result, list) else 'objeto'}")
+            print(f"📌 Campos principais encontrados: {list(analysis_obj.keys())}")
+            
+            # Verificar aportes_pool
+            if 'aportes_pool' in analysis_obj:
+                aportes = analysis_obj['aportes_pool']
+                print(f"\n✅ aportes_pool PRESENTE! Verificando campos:")
+                campos_esperados = ['valor_total_pool', 'despesas_todas_obras', 'despesas_esta_obra', 'taxa_rateio_percentual', 'valor_rateado_esta_obra', 'metodo_calculo']
+                for campo in campos_esperados:
+                    if campo in aportes:
+                        print(f"   ✅ {campo}: {aportes[campo]}")
+                    else:
+                        print(f"   ❌ {campo}: FALTANDO!")
+            else:
+                print(f"\n❌ aportes_pool NÃO ENCONTRADO!")
+                print(f"   Procurando em subníveis...")
+                for key, value in analysis_obj.items():
+                    if isinstance(value, dict) and 'valor_total_pool' in value:
+                        print(f"   ⚠️ Encontrado em '{key}': {value}")
+            
+            print("\n💾 JSON COMPLETO (primeiras 500 chars):")
+            print(json.dumps(result, indent=2, ensure_ascii=False)[:500])
+            print("="*80 + "\n")
+            
             return result
         except json.JSONDecodeError as e:
             print(f"❌ Erro ao fazer parse JSON na primeira tentativa: {e}")
