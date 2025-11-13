@@ -647,24 +647,17 @@ def process_openai_request(messages, model, max_tokens):
             print(f"📝 Combined input length: {len(combined_input)} chars")
             
             # ✅ Responses API com parâmetros corretos para GPT-5
-            try:
-                response = openai_client.responses.create(
-                    model=model,
-                    input=combined_input,
-                    max_output_tokens=max_tokens,
-                    reasoning={"effort": "high"},  # ⭐ ULTRA-DETALHADO para análises financeiras
-                    text={"verbosity": "high"}  # Alta verbosidade para análise completa
-                )
-                
-                print(f"✅ Resposta GPT-5 recebida (reasoning:high) | Output tokens: {max_tokens}")
-                return CompatResponse(response.output_text), None
+            # IMPORTANTE: reasoning com effort LOW para economizar tempo e memória!
+            response = openai_client.responses.create(
+                model=model,
+                input=combined_input,
+                max_output_tokens=max_tokens,
+                reasoning={"effort": "low"},  # ⭐ LOW, não HIGH (evita timeout/memória)
+                text={"verbosity": "high"}
+            )
             
-            except Exception as gpt5_error:
-                # 🔄 FALLBACK: GPT-5 indisponível, tentar GPT-4o
-                print(f"⚠️ GPT-5 falhou: {str(gpt5_error)[:100]}")
-                print(f"🔄 Tentando fallback com GPT-4o...")
-                model = 'gpt-4o'
-                # Continua abaixo com Chat Completions
+            print(f"✅ Resposta GPT-5 recebida | Output tokens: {max_tokens}")
+            return CompatResponse(response.output_text), None
         
         else:
             # Chat Completions API para outros modelos (GPT-4o, GPT-4, etc)
@@ -1111,9 +1104,9 @@ def chat_endpoint():
             print(f"⚠️ Modelo '{model}' não suportado. Usando padrão: gpt-5")
             model = 'gpt-5'
         
-        # CRÍTICO: Limites por modelo (GPT-5 pode usar até 12k tokens)
+        # CRÍTICO: Limites por modelo (GPT-5 pode usar até 8k tokens com LOW effort)
         if model.startswith('gpt-5'):
-            max_tokens = min(data.get('max_tokens', 6000), 12000)  # GPT-5: até 12k
+            max_tokens = min(data.get('max_tokens', 4000), 8000)  # GPT-5: até 8k
         else:
             max_tokens = min(data.get('max_tokens', 2000), 4000)   # Outros: até 4k
         

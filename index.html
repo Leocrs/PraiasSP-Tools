@@ -271,7 +271,7 @@
         try {
           const model = safeLocalStorageGetItem("openai_model") || "gpt-5";
           const maxTokens =
-            Number(safeLocalStorageGetItem("max_tokens")) || 6000;
+            Number(safeLocalStorageGetItem("max_tokens")) || 4000;
 
           document.getElementById("model").value = model;
           document.getElementById("maxTokens").value = maxTokens;
@@ -547,7 +547,7 @@
 
         const model = document.getElementById("model").value || "gpt-5";
         const maxTokens =
-          parseInt(document.getElementById("maxTokens").value) || 6000;
+          parseInt(document.getElementById("maxTokens").value) || 4000;
 
         const messages = [
           { role: "system", content: systemPrompt },
