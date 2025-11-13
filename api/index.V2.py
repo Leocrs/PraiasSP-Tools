@@ -753,17 +753,38 @@ EXTRAÇÃO OBRIGATÓRIA DE CAMPOS:
    - VALIDAR: Saldo_Final ≈ Saldo_Inicial + Receitas - Despesas (±R$1,00)
    - SE DIVERGÊNCIA > R$1,00: adicione flag "saldo_auditoria_necessaria"
 
-7️⃣ RATEIO DE APORTES (CÁLCULO AUTOMÁTICO)
-   - Se "POSIÇÃO FINANCEIRA": extraia aportes_recebidos_total
-   - CALCULE taxa_rateio = despesas_esta_obra / total_despesas_mes
-   - CALCULE aporte_rateado = aportes_recebidos_total × taxa_rateio
-   - Exemplo:
+7️⃣ RATEIO DE APORTES (CÁLCULO OBRIGATÓRIO)
+   - ⭐ SE ENCONTRAR "POSIÇÃO FINANCEIRA" COM APORTES RECEBIDOS:
+     * EXTRAIA: aportes_recebidos_total (valor exato dos aportes que entraram)
+     * EXTRAIA: despesas_desta_obra (total de despesas desta obra no mês)
+     * PROCURE NO MESMO RELATÓRIO OU CONSOLIDADO: despesas de TODAS as obras do mês
+     
+   - CALCULE PERCENTUAL:
+     * taxa_rateio (%) = despesas_desta_obra / total_despesas_todas_obras
+     
+   - CALCULE APORTE RATEADO:
+     * aporte_rateado = aportes_recebidos_total × taxa_rateio (%)
+   
+   - EXEMPLO OBRIGATÓRIO:
      * Despesas Obra 616: R$ 82,60
-     * Despesas Shopping: R$ 7.319.079,56
-     * Total: R$ 7.319.162,16
-     * Taxa Obra 616: 82,60 / 7.319.162,16 = 0.001129%
-     * Aporte recebido: R$ 5.483.433,37
-     * Aporte rateado Obra 616: R$ 5.483.433,37 × 0.001129% = R$ XXX,XX
+     * Despesas Shopping (603+637): R$ 7.319.079,56
+     * TOTAL DESPESAS MÊS: R$ 7.319.162,16
+     * Taxa Rateio Obra 616: 82,60 ÷ 7.319.162,16 = 0.001129 (ou 0.1129%)
+     * Aportes Recebidos Pool: R$ 5.483.433,37
+     * ✅ Aporte Rateado Obra 616: R$ 5.483.433,37 × 0.001129 = R$ 61,87
+   
+   - ⭐ RETORNE NO JSON: objeto "aportes_pool" COM TODOS estes campos (OBRIGATÓRIO):
+     {
+       "valor_total_pool": 5483433.37,              # Aportes que entraram
+       "despesas_todas_obras": 7319162.16,          # Total de despesas consolidadas
+       "despesas_esta_obra": 82.60,                 # Despesas desta obra
+       "taxa_rateio_percentual": 0.001129,          # Percentual (não %!)
+       "valor_rateado_esta_obra": 61.87,            # Valor que cabe a esta obra
+       "metodo_calculo": "Proporcional às despesas mensais"
+     }
+   
+   - ⚠️ SE NÃO ENCONTRAR APORTES RECEBIDOS: use "não_informado" e flag de alerta
+   - ⚠️ NUNCA aproxime: sempre valores EXATOS do PDF
 
 8️⃣ CONCILIAÇÃO BANCÁRIA (bandeira vermelha)
    - Procure: "Bradesco", "Saldo Banco", "Conciliado com"
@@ -779,6 +800,20 @@ REGRAS NÃO-NEGOCIÁVEIS:
 ❌ NÃO ignore tabelas (leia cada linha)
 ❌ NÃO esqueça decimais (sempre XX,XX)
 ❌ SE NÃO ENCONTRAR CAMPO: use "não_informado" COM FLAG DE ALERTA
+
+═════════════════════════════════════════════════════════════════════════════
+
+⭐ INSTRUÇÃO CRÍTICA: APORTES_POOL É OBRIGATÓRIO
+- O CAMPO "aportes_pool" DEVE estar SEMPRE presente no JSON
+- Todos os 6 subcampos DEVEM ser preenchidos com valores numéricos válidos:
+  * valor_total_pool (nunca null)
+  * despesas_todas_obras (nunca null)
+  * despesas_esta_obra (nunca null)
+  * taxa_rateio_percentual (nunca null)
+  * valor_rateado_esta_obra (nunca null)
+  * metodo_calculo (nunca null)
+- SE não conseguir extrair todos os valores: use 0.0 e adicione observação explicando
+- JAMAIS deixe este campo vazio ou ausente
 
 ═════════════════════════════════════════════════════════════════════════════
 
@@ -804,9 +839,10 @@ RETORNE ESTE JSON (sem markdown, sem explicações):
     "aportes_pool": {{
       "valor_total_pool": 5483433.37,
       "despesas_todas_obras": 7319162.16,
-      "taxa_rateio_esta_obra": 0.00001129,
+      "despesas_esta_obra": 82.60,
+      "taxa_rateio_percentual": 0.001129,
       "valor_rateado_esta_obra": 61.87,
-      "metodo_calculo": "Proporcional às despesas do mês"
+      "metodo_calculo": "Proporcional às despesas mensais"
     }},
     "rentabilidade_mensal": 72941.28,
     "conciliacao_bancaria": {{
@@ -903,6 +939,47 @@ DOCUMENTO A PROCESSAR:
     except Exception as e:
         print(f"❌ Erro ao analisar com OpenAI: {e}")
         raise
+
+def validate_aportes_pool(analysis):
+    """
+    Validar que aportes_pool está presente com todos os campos obrigatórios.
+    Se faltar, adicionar alerta.
+    """
+    if isinstance(analysis, list) and len(analysis) > 0:
+        analysis = analysis[0]
+    
+    aportes_pool = analysis.get('aportes_pool', {})
+    
+    required_fields = [
+        'valor_total_pool',
+        'despesas_todas_obras',
+        'despesas_esta_obra',
+        'taxa_rateio_percentual',
+        'valor_rateado_esta_obra',
+        'metodo_calculo'
+    ]
+    
+    missing_fields = [f for f in required_fields if f not in aportes_pool or aportes_pool[f] is None]
+    
+    if missing_fields:
+        print(f"⚠️ ALERTA: Campos faltantes em aportes_pool: {missing_fields}")
+        
+        # Adicionar flag de alerta
+        if 'validacoes' not in analysis:
+            analysis['validacoes'] = {'alertas': []}
+        
+        if 'alertas' not in analysis['validacoes']:
+            analysis['validacoes']['alertas'] = []
+        
+        analysis['validacoes']['alertas'].append(
+            f"❌ RATEIO INCOMPLETO: Faltam campos: {', '.join(missing_fields)}"
+        )
+        
+        print(f"🚨 Validação de aportes_pool falhou!")
+        return False
+    else:
+        print(f"✅ Validação de aportes_pool: SUCESSO - Todos os 6 campos presentes")
+        return True
 
 def save_analysis_to_db(analysis):
     """Salvar análise no banco de dados"""
@@ -1015,6 +1092,10 @@ def analyze_pdf_endpoint():
         # 2. Analisar com OpenAI (usando modelo selecionado)
         print(f"🤖 Analisando com {model}...")
         analysis = analyze_with_openai(pdf_text, document_type='relatório financeiro', model=model)
+        
+        # 2.5 Validar rateio de aportes
+        print("🔍 Validando rateio de aportes...")
+        validate_aportes_pool(analysis)
         
         print(f"✅ Análise concluída: {analysis.get('codigo_obra')} - {analysis.get('competencia')}")
         
