@@ -581,32 +581,67 @@ def process_openai_request(messages, model, max_tokens):
 def analyze_with_openai(pdf_text, document_type='relatório', model='gpt-4o'):
     """Analisar texto com OpenAI (GPT-5, GPT-4o, etc)"""
     try:
-        prompt = f"""Você é especialista em análise de relatórios financeiros de construção (Riviera Empreendimentos).
-        
-Analise o seguinte {document_type} e extraia os dados estruturados:
-- Competência (mês/ano no formato MM/YYYY)
-- Código da obra (identificador)
-- Nome da obra
-- Tipo de movimentos (Despesa, Aporte_Rateado, Rentabilidade, Saldo_Final)
-- Valores (números em reais)
-- Fonte do movimento
-- Observações importantes
+        prompt = f"""Você é especialista em análise de relatórios financeiros de CONSTRUÇÃO - Riviera Empreendimentos.
 
-Se houver tabelas, preserve todos os dados e valores. Se algo não estiver claro, indique como "Não informado".
+OBJETIVO PRINCIPAL:
+Processar PDFs mensais de Praias SP seguindo a lógica de consolidação financeira do CEO.
 
-Retorne APENAS um JSON válido (sem markdown, sem explicações) com esta estrutura:
+TIPOS DE DOCUMENTOS ESPERADOS (identifique automaticamente):
+- "SHOPP 562 601 603 e 604 POSIÇÃO FINANC ...pdf" → Posição financeira de shopping
+- "SHOPP ... DESPESAS ...pdf" → Despesas detalhadas de shopping
+- "OBRA 616 ... POSIÇÃO FINANC ...pdf" → Posição financeira de obra
+- Outros padrões de nomenclatura com POSIÇÃO FINANC ou DESPESAS
+
+DADOS A EXTRAIR:
+1. **Competência**: Mês/ano no formato MM/YYYY (obrigatório)
+2. **Código da obra**: Identificador numérico (562, 601, 603, 604, 616, etc)
+3. **Nome da obra**: Nome completo (ex: "SHOPP", "OBRA 616")
+4. **Despesas por obra**: Discriminar TODAS as despesas com valores em reais
+5. **Aportes do pool**: Valor total e distribuição (se houver)
+6. **Rentabilidade**: Rendimento financeiro mensual
+7. **Saldo final**: Saldo consolidado ao final do período
+
+REGRA DE RATEIO DE APORTES:
+- Padrão: PROPORCIONAL ÀS DESPESAS DO MÊS
+- Se o documento não especificar, calcule: (Despesa da Obra / Total de Despesas) × Aporte_Total
+- Indique a taxa de rateio no resultado
+
+TABELAS E DADOS ESTRUTURADOS:
+- Se houver tabelas, PRESERVE TODOS OS VALORES EXATAMENTE
+- Cada linha da tabela deve ser um movimento separado
+- Não agrupe ou aproxime valores
+
+VALIDAÇÕES CRÍTICAS:
+- Se competência estiver em formato diferente, converta para MM/YYYY
+- Se código da obra tiver prefixos (ex: "OBRA-616"), extraia apenas o número
+- Se valor tiver símbolos (R$, ., ,), limpe e converta para decimal
+- Se algo não estiver claro, marque como "Não informado" e indique suspeita
+
+Retorne APENAS um JSON válido (sem markdown, sem explicações) com esta EXATA estrutura:
 {{
     "competencia": "MM/YYYY",
-    "codigo_obra": "ABC123",
-    "obra_nome": "Nome da Obra",
-    "movimentos": [
-        {{"tipo": "Despesa", "valor": 1000.00, "fonte": "Fornecedor X", "descricao": "..."}},
-        {{"tipo": "Aporte_Rateado", "valor": 5000.00, "fonte": "Rateio", "descricao": "..."}}
+    "codigo_obra": "XXX",
+    "obra_nome": "Nome Completo",
+    "tipo_documento": "POSIÇÃO_FINANC|DESPESAS",
+    "despesas": [
+        {{"descricao": "Fornecedor/Descricao", "valor": 1000.50, "categoria": "Material|MO|Outros"}}
     ],
-    "observacoes": "..."
+    "despesas_total": 5000.00,
+    "aportes_pool": {{
+        "valor_total": 10000.00,
+        "valor_rateado_esta_obra": 2500.00,
+        "taxa_rateio": 0.25,
+        "metodo": "Proporcional às despesas"
+    }},
+    "rentabilidade_mensal": 150.75,
+    "saldo_final": 3500.00,
+    "tabelas_completas": [
+        {{"fonte": "Tabela X", "linhas": [...]}}
+    ],
+    "observacoes": "Notas importantes sobre o documento"
 }}
 
-DOCUMENTO:
+DOCUMENTO A PROCESSAR:
 {pdf_text}"""
         
         messages = [
