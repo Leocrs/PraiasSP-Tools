@@ -129,6 +129,12 @@ MAX_FILE_SIZE = int(os.getenv('MAX_FILE_SIZE', 52428800))  # 50MB
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
+# Inicializar cliente OpenAI global
+openai_client = OpenAI(
+    api_key=os.getenv('OPENAI_API_KEY'),
+    timeout=OPENAI_TIMEOUT
+)
+
 # ================================
 # MIDDLEWARE E HANDLERS
 # ================================
@@ -506,12 +512,6 @@ def process_openai_request(messages, model, max_tokens):
         Tuple (response, error_message)
     """
     try:
-        api_key = os.getenv('OPENAI_API_KEY')
-        if not api_key:
-            raise ValueError("OPENAI_API_KEY não configurada no .env")
-        
-        client = OpenAI(api_key=api_key)
-        
         print(f"🔄 Preparando requisição para {model}...")
         print(f"   Max Tokens: {max_tokens}")
         
@@ -536,7 +536,7 @@ def process_openai_request(messages, model, max_tokens):
             print(f"📝 Combined input length: {len(combined_input)} chars")
             
             # ✅ Responses API com parâmetros corretos para GPT-5
-            response = client.responses.create(
+            response = openai_client.responses.create(
                 model=model,
                 input=combined_input,
                 max_output_tokens=max_tokens,
@@ -555,7 +555,7 @@ def process_openai_request(messages, model, max_tokens):
             
             try:
                 # Tentar com max_completion_tokens (novo SDK)
-                response = client.chat.completions.create(
+                response = openai_client.chat.completions.create(
                     model=model,
                     messages=messages,
                     max_completion_tokens=max_tokens,
@@ -566,7 +566,7 @@ def process_openai_request(messages, model, max_tokens):
                 return response, None
             except TypeError:
                 # Fallback para max_tokens (SDK antigo ou modelos antigos)
-                response = client.chat.completions.create(
+                response = openai_client.chat.completions.create(
                     model=model,
                     messages=messages,
                     max_tokens=max_tokens,
