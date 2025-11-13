@@ -55,8 +55,10 @@ def init_db():
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS configuracoes (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                chave TEXT UNIQUE NOT NULL,
-                valor TEXT,
+                api_key TEXT UNIQUE,
+                modelo TEXT DEFAULT 'gpt-5',
+                max_tokens INTEGER DEFAULT 6000,
+                chunk_size INTEGER DEFAULT 8000,
                 data_atualizacao DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         ''')
@@ -120,7 +122,20 @@ load_dotenv()
 
 # Inicializar Flask
 app = Flask(__name__, static_folder='../static', template_folder='../templates')
-CORS(app)
+
+# Configurar CORS explicitamente
+CORS(app, 
+     origins=[
+         "https://praias-sp-tools.vercel.app",
+         "http://localhost:3000",
+         "http://localhost:5173",
+         "http://localhost:8080"
+     ],
+     methods=["GET", "POST", "OPTIONS", "PUT", "DELETE"],
+     allow_headers=["Content-Type", "Authorization"],
+     supports_credentials=True,
+     max_age=3600
+)
 
 # Configurações
 REQUEST_TIMEOUT = 120
@@ -147,7 +162,22 @@ def before_request():
 
 @app.after_request
 def after_request(response):
-    """Registrar requisições longas e fazer limpeza"""
+    """Registrar requisições longas e fazer limpeza + garantir CORS headers"""
+    # Garantir headers CORS explícitos
+    origin = request.headers.get('Origin')
+    allowed_origins = [
+        "https://praias-sp-tools.vercel.app",
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://localhost:8080"
+    ]
+    
+    if origin in allowed_origins:
+        response.headers['Access-Control-Allow-Origin'] = origin
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+    
     duration = time.time() - request.start_time
     if duration > 5:
         print(f"⚠️ Requisição lenta: {request.endpoint} - {duration:.2f}s")
@@ -619,24 +649,17 @@ def process_openai_request(messages, model, max_tokens):
             print(f"📝 Combined input length: {len(combined_input)} chars")
             
             # ✅ Responses API com parâmetros corretos para GPT-5
-            try:
-                response = openai_client.responses.create(
-                    model=model,
-                    input=combined_input,
-                    max_output_tokens=max_tokens,
-                    reasoning={"effort": "high"},  # ⭐ ULTRA-DETALHADO para análises financeiras
-                    text={"verbosity": "high"}  # Alta verbosidade para análise completa
-                )
-                
-                print(f"✅ Resposta GPT-5 recebida (reasoning:high) | Output tokens: {max_tokens}")
-                return CompatResponse(response.output_text), None
+            # IMPORTANTE: reasoning com effort LOW para economizar tempo e memória!
+            response = openai_client.responses.create(
+                model=model,
+                input=combined_input,
+                max_output_tokens=max_tokens,
+                reasoning={"effort": "low"},  # ⭐ LOW, não HIGH (evita timeout/memória)
+                text={"verbosity": "high"}
+            )
             
-            except Exception as gpt5_error:
-                # 🔄 FALLBACK: GPT-5 indisponível, tentar GPT-4o
-                print(f"⚠️ GPT-5 falhou: {str(gpt5_error)[:100]}")
-                print(f"🔄 Tentando fallback com GPT-4o...")
-                model = 'gpt-4o'
-                # Continua abaixo com Chat Completions
+            print(f"✅ Resposta GPT-5 recebida | Output tokens: {max_tokens}")
+            return CompatResponse(response.output_text), None
         
         else:
             # Chat Completions API para outros modelos (GPT-4o, GPT-4, etc)
@@ -1024,7 +1047,7 @@ def analyze_pdf_endpoint():
 # ENDPOINT - CHAT COM IA (COMPATÍVEL COM FRONTEND)
 # ================================
 
-@app.route('/api/chat', methods=['POST'])
+@app.route('/api/chat', methods=['POST', 'OPTIONS'])
 def chat_endpoint():
     """
     Endpoint de chat unificado com suporte a múltiplos modelos (GPT-5, GPT-4o, etc)
@@ -1050,6 +1073,11 @@ def chat_endpoint():
             "processing_time": 1.23
         }
     """
+    
+    # Responder às requisições OPTIONS (preflight CORS)
+    if request.method == 'OPTIONS':
+        return '', 204
+    
     start_time = time.time()
     
     try:
@@ -1083,11 +1111,11 @@ def chat_endpoint():
             print(f"⚠️ Modelo '{model}' não suportado. Usando padrão: gpt-5")
             model = 'gpt-5'
         
-        # CRÍTICO: Limites por modelo (GPT-5 pode usar até 12k tokens)
+        # CRÍTICO: Limites por modelo (copiar exatamente da referência)
         if model.startswith('gpt-5'):
-            max_tokens = min(data.get('max_tokens', 6000), 12000)  # GPT-5: até 12k
+            max_tokens = min(data.get('max_tokens', 6000), 12000)  # GPT-5: até 12k tokens
         else:
-            max_tokens = min(data.get('max_tokens', 2000), 4000)   # Outros: até 4k
+            max_tokens = min(data.get('max_tokens', 2000), 4000)   # Outros: até 4k tokens
         
         # Logging estruturado
         print("\n" + "="*60)
@@ -1223,6 +1251,94 @@ def internal_error(error):
         'status': 'error',
         'message': 'Erro interno do servidor'
     }), 500
+
+# ================================
+# ENDPOINTS DE CONFIGURAÇÕES (idêntico à referência)
+# ================================
+
+@app.route('/api/settings', methods=['GET'])
+def get_settings():
+    """Endpoint para recuperar configurações do usuário"""
+    try:
+        # Tentar obter API Key do header
+        api_key = request.headers.get('X-API-Key') or request.args.get('api_key', 'default')
+        
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                'SELECT modelo, max_tokens, chunk_size FROM configuracoes WHERE api_key = ?',
+                (api_key,)
+            )
+            row = cursor.fetchone()
+        
+        if row:
+            return jsonify({
+                'modelo': row[0],
+                'max_tokens': row[1],
+                'chunk_size': row[2],
+                'cached': False
+            })
+        else:
+            # Retornar valores padrão se não encontrado
+            return jsonify({
+                'modelo': 'gpt-5',
+                'max_tokens': 6000,
+                'chunk_size': 8000,
+                'cached': True
+            })
+    except Exception as e:
+        print(f"❌ Erro ao buscar configurações: {e}")
+        return jsonify({
+            'modelo': 'gpt-5',
+            'max_tokens': 6000,
+            'chunk_size': 8000,
+            'error': str(e),
+            'cached': True
+        }), 200  # Retornar 200 mesmo com erro para fallback
+
+@app.route('/api/settings', methods=['POST'])
+def save_settings():
+    """Endpoint para salvar configurações do usuário"""
+    try:
+        data = request.json
+        api_key = data.get('api_key', 'default')
+        modelo = data.get('modelo', 'gpt-5')
+        max_tokens = data.get('max_tokens', 6000)
+        chunk_size = data.get('chunk_size', 8000)
+        
+        # Validações básicas
+        if max_tokens < 100 or max_tokens > 128000:
+            return jsonify({'error': 'max_tokens deve estar entre 100 e 128000'}), 400
+        
+        if chunk_size < 100 or chunk_size > 128000:
+            return jsonify({'error': 'chunk_size deve estar entre 100 e 128000'}), 400
+        
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            # Tentar atualizar, senão inserir (UPSERT)
+            cursor.execute('''
+                INSERT INTO configuracoes (api_key, modelo, max_tokens, chunk_size)
+                VALUES (?, ?, ?, ?)
+                ON CONFLICT(api_key) 
+                DO UPDATE SET 
+                    modelo = excluded.modelo,
+                    max_tokens = excluded.max_tokens,
+                    chunk_size = excluded.chunk_size,
+                    data_atualizacao = CURRENT_TIMESTAMP
+            ''', (api_key, modelo, max_tokens, chunk_size))
+            conn.commit()
+        
+        print(f"✅ Configurações salvas para API Key: {api_key[:10]}...")
+        return jsonify({
+            'success': True,
+            'message': 'Configurações salvas com sucesso',
+            'modelo': modelo,
+            'max_tokens': max_tokens,
+            'chunk_size': chunk_size
+        })
+    except Exception as e:
+        print(f"❌ Erro ao salvar configurações: {e}")
+        return jsonify({'error': str(e)}), 500
 
 # ================================
 # INICIALIZAÇÃO
