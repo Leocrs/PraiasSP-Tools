@@ -579,6 +579,162 @@ def atualizar_orcamento():
         }), 500
 
 # ================================
+# ROTAS - ALERTAS DE DESVIO
+# ================================
+
+@app.route('/api/alertas-desvio', methods=['GET'])
+def get_alertas_desvio():
+    """
+    Obter alertas de desvio acima de 10% entre custo realizado vs previsto.
+    
+    Parâmetros opcionais:
+        - codigo_obra: Filtrar por obra
+        - competencia: Filtrar por mês
+        - tipo_desvio: 'estouro', 'economia', 'em_controle'
+    """
+    try:
+        codigo_obra = request.args.get('codigo_obra')
+        competencia = request.args.get('competencia')
+        tipo_desvio = request.args.get('tipo_desvio')
+        
+        alertas = []
+        
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            
+            # Buscar todas as obras com orçamento previsto
+            cursor.execute('SELECT DISTINCT codigo_obra, obra_nome FROM movimentos')
+            obras = cursor.fetchall()
+            
+            for obra in obras:
+                cod_obra = obra[0]
+                nome_obra = obra[1]
+                
+                # Filtrar por código de obra se especificado
+                if codigo_obra and cod_obra != codigo_obra:
+                    continue
+                
+                # Buscar orçamento previsto
+                cursor.execute(
+                    'SELECT custo_previsto FROM orcamento_previsto WHERE codigo_obra = ?',
+                    (cod_obra,)
+                )
+                row = cursor.fetchone()
+                custo_previsto = row[0] if row else None
+                
+                if not custo_previsto:
+                    continue
+                
+                # Buscar despesas por competência
+                if competencia:
+                    query = '''
+                        SELECT competencia, SUM(valor) as total
+                        FROM movimentos
+                        WHERE codigo_obra = ? AND tipo = 'Despesa' AND competencia = ?
+                        GROUP BY competencia
+                    '''
+                    cursor.execute(query, (cod_obra, competencia))
+                else:
+                    query = '''
+                        SELECT competencia, SUM(valor) as total
+                        FROM movimentos
+                        WHERE codigo_obra = ? AND tipo = 'Despesa'
+                        GROUP BY competencia
+                        ORDER BY competencia DESC
+                    '''
+                    cursor.execute(query, (cod_obra,))
+                
+                rows = cursor.fetchall()
+                
+                for row in rows:
+                    comp = row[0]
+                    despesa_realizada = row[1]
+                    
+                    # Calcular desvio
+                    resultado = calcular_desvio_orcamento(despesa_realizada, custo_previsto, limiar_alerta=10)
+                    
+                    # Filtrar por tipo de desvio se especificado
+                    if tipo_desvio and resultado['tipo_desvio'] != tipo_desvio:
+                        continue
+                    
+                    alerta = {
+                        'codigo_obra': cod_obra,
+                        'obra_nome': nome_obra,
+                        'competencia': comp,
+                        'custo_previsto': custo_previsto,
+                        'custo_realizado': despesa_realizada,
+                        'desvio_percentual': resultado['desvio_percentual'],
+                        'tem_alerta': resultado['tem_alerta'],
+                        'tipo_desvio': resultado['tipo_desvio'],
+                        'mensagem': resultado['mensagem']
+                    }
+                    alertas.append(alerta)
+        
+        # Ordenar por desvio percentual (maior primeiro)
+        alertas.sort(key=lambda x: abs(x['desvio_percentual']), reverse=True)
+        
+        return jsonify({
+            'status': 'success',
+            'total_alertas': len([a for a in alertas if a['tem_alerta']]),
+            'total_registros': len(alertas),
+            'data': alertas
+        }), 200
+    
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+@app.route('/api/alertas-desvio/resumo', methods=['GET'])
+def get_resumo_alertas():
+    """
+    Obter resumo dos alertas de desvio agrupados por tipo.
+    
+    Retorna:
+        {
+            'estouro': {count: X, total_desvio: Y},
+            'economia': {count: X, total_desvio: Y},
+            'em_controle': {count: X}
+        }
+    """
+    try:
+        # Chamar endpoint de alertas
+        from flask import current_app
+        with current_app.test_client() as client:
+            response = client.get('/api/alertas-desvio')
+            data = response.get_json()
+            alertas = data.get('data', [])
+        
+        resumo = {
+            'estouro': {'count': 0, 'total_desvio': 0, 'obras': []},
+            'economia': {'count': 0, 'total_desvio': 0, 'obras': []},
+            'em_controle': {'count': 0}
+        }
+        
+        for alerta in alertas:
+            tipo = alerta['tipo_desvio']
+            if tipo in resumo:
+                resumo[tipo]['count'] += 1
+                if tipo != 'em_controle':
+                    resumo[tipo]['total_desvio'] += abs(alerta['desvio_percentual'])
+                    resumo[tipo]['obras'].append({
+                        'codigo': alerta['codigo_obra'],
+                        'desvio': alerta['desvio_percentual']
+                    })
+        
+        return jsonify({
+            'status': 'success',
+            'resumo': resumo
+        }), 200
+    
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+# ================================
 # FASE 2.1 - ANÁLISE COM OpenAI
 # ================================
 
@@ -981,6 +1137,136 @@ def validate_aportes_pool(analysis):
         print(f"✅ Validação de aportes_pool: SUCESSO - Todos os 6 campos presentes")
         return True
 
+def calcular_desvio_orcamento(custo_realizado, custo_previsto, limiar_alerta=10):
+    """
+    Calcular desvio percentual entre custo realizado e previsto.
+    
+    Args:
+        custo_realizado (float): Custo realizado (despesa)
+        custo_previsto (float): Custo previsto no orçamento
+        limiar_alerta (float): Percentual de desvio que gera alerta (padrão 10%)
+    
+    Returns:
+        dict: {
+            'desvio_percentual': float,
+            'tem_alerta': bool,
+            'tipo_desvio': str ('economia', 'estouro', 'em_controle', 'nao_calculado'),
+            'mensagem': str
+        }
+    """
+    if not custo_previsto or custo_previsto == 0:
+        return {
+            'desvio_percentual': 0,
+            'tem_alerta': False,
+            'tipo_desvio': 'nao_calculado',
+            'mensagem': '⚠️ Orçamento previsto não informado'
+        }
+    
+    if custo_realizado is None:
+        return {
+            'desvio_percentual': 0,
+            'tem_alerta': False,
+            'tipo_desvio': 'nao_calculado',
+            'mensagem': '⚠️ Custo realizado não informado'
+        }
+    
+    # Calcular desvio
+    desvio = custo_realizado - custo_previsto
+    desvio_percentual = (desvio / custo_previsto) * 100
+    
+    # Determinar tipo e alerta
+    if abs(desvio_percentual) <= limiar_alerta:
+        tipo_desvio = 'em_controle'
+        tem_alerta = False
+        emoji = '✅'
+        tipo_msg = 'em controle'
+    elif desvio_percentual > 0:
+        tipo_desvio = 'estouro'
+        tem_alerta = True
+        emoji = '🚨'
+        tipo_msg = 'ESTOURO'
+    else:
+        tipo_desvio = 'economia'
+        tem_alerta = True
+        emoji = '💰'
+        tipo_msg = 'ECONOMIA'
+    
+    mensagem = f"{emoji} {tipo_msg}: {abs(desvio_percentual):.1f}% de desvio ({custo_realizado:.2f} vs previsto {custo_previsto:.2f})"
+    
+    return {
+        'desvio_percentual': round(desvio_percentual, 2),
+        'tem_alerta': tem_alerta,
+        'tipo_desvio': tipo_desvio,
+        'mensagem': mensagem
+    }
+
+def gerar_alertas_desvio(analysis):
+    """
+    Gerar alertas de desvio acima de 10% comparando custo realizado vs previsto.
+    
+    Args:
+        analysis (dict): Análise do PDF com dados financeiros
+    
+    Returns:
+        list: Lista de alertas gerados
+    """
+    alertas = []
+    
+    # Normalizar se for lista
+    if isinstance(analysis, list) and len(analysis) > 0:
+        analysis = analysis[0]
+    
+    # Inicializar estrutura de validações se não existir
+    if 'validacoes' not in analysis:
+        analysis['validacoes'] = {'alertas': []}
+    
+    if 'alertas' not in analysis['validacoes']:
+        analysis['validacoes']['alertas'] = []
+    
+    # Obter dados necessários
+    codigo_obra = analysis.get('codigo_obra', 'Desconhecida')
+    competencia = analysis.get('competencia', 'Não informada')
+    
+    # Verificar se há movimentos com despesa
+    movimentos = analysis.get('movimentos', [])
+    despesa_realizada = 0
+    
+    for mov in movimentos:
+        if mov.get('tipo') == 'Despesa':
+            despesa_realizada += float(mov.get('valor', 0))
+    
+    # Buscar custo previsto no banco de dados
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                'SELECT custo_previsto FROM orcamento_previsto WHERE codigo_obra = ?',
+                (codigo_obra,)
+            )
+            row = cursor.fetchone()
+            custo_previsto = row[0] if row else None
+    except Exception as e:
+        print(f"⚠️ Erro ao buscar orçamento previsto: {e}")
+        custo_previsto = None
+    
+    # Calcular desvio se temos dados suficientes
+    if despesa_realizada > 0 and custo_previsto:
+        resultado = calcular_desvio_orcamento(despesa_realizada, custo_previsto, limiar_alerta=10)
+        
+        if resultado['tem_alerta']:
+            alerta = f"🚨 DESVIO ORÇAMENTÁRIO ({competencia}): {resultado['mensagem']}"
+            alertas.append(alerta)
+            analysis['validacoes']['alertas'].append(alerta)
+            
+            print(f"\n{'='*60}")
+            print(f"⚠️ ALERTA DE DESVIO GERADO")
+            print(f"Obra: {codigo_obra}")
+            print(f"Competência: {competencia}")
+            print(f"{resultado['mensagem']}")
+            print(f"{'='*60}\n")
+    
+    return alertas
+
 def save_analysis_to_db(analysis):
     """Salvar análise no banco de dados"""
     try:
@@ -1096,6 +1382,10 @@ def analyze_pdf_endpoint():
         # 2.5 Validar rateio de aportes
         print("🔍 Validando rateio de aportes...")
         validate_aportes_pool(analysis)
+        
+        # 2.6 Gerar alertas de desvio orçamentário
+        print("📊 Gerando alertas de desvio orçamentário...")
+        gerar_alertas_desvio(analysis)
         
         print(f"✅ Análise concluída: {analysis.get('codigo_obra')} - {analysis.get('competencia')}")
         
