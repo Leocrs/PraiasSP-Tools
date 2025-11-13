@@ -129,6 +129,12 @@ MAX_FILE_SIZE = int(os.getenv('MAX_FILE_SIZE', 52428800))  # 50MB
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
+# Inicializar cliente OpenAI global
+openai_client = OpenAI(
+    api_key=os.getenv('OPENAI_API_KEY'),
+    timeout=OPENAI_TIMEOUT
+)
+
 # ================================
 # MIDDLEWARE E HANDLERS
 # ================================
@@ -475,15 +481,110 @@ def extract_pdf_text(file):
         print(f"❌ Erro ao extrair PDF: {e}")
         raise
 
-def analyze_with_openai(pdf_text, document_type='relatório'):
-    """Analisar texto com OpenAI GPT-4o"""
+# ================================
+# UTILITÁRIO - COMPATIBILIDADE COM RESPONSES API (GPT-5)
+# ================================
+
+class CompatResponse:
+    """Classe para compatibilidade entre Responses API (GPT-5) e Chat Completions API"""
+    class Choice:
+        class Message:
+            def __init__(self, content):
+                self.content = content
+        
+        def __init__(self, content):
+            self.message = self.Message(content)
+            self.finish_reason = "stop"
+    
+    def __init__(self, content):
+        self.choices = [self.Choice(content)]
+
+def process_openai_request(messages, model, max_tokens):
+    """
+    Processa requisição OpenAI com suporte a GPT-5 (Responses API) e compatibilidade com outros modelos
+    
+    Args:
+        messages: Lista de mensagens com roles 'system' e 'user'
+        model: Nome do modelo ('gpt-5', 'gpt-4o', etc)
+        max_tokens: Máximo de tokens na resposta
+    
+    Returns:
+        Tuple (response, error_message)
+    """
     try:
-        api_key = os.getenv('OPENAI_API_KEY')
-        if not api_key:
-            raise ValueError("OPENAI_API_KEY não configurada no .env")
+        print(f"🔄 Preparando requisição para {model}...")
+        print(f"   Max Tokens: {max_tokens}")
         
-        client = OpenAI(api_key=api_key)
+        # ⭐ GPT-5 usa Responses API, não Chat Completions!
+        if model.startswith('gpt-5'):
+            print("🔄 Usando Responses API para GPT-5...")
+            
+            # Extrair system prompt e user message
+            system_content = ""
+            user_message = ""
+            for msg in messages:
+                if msg.get("role") == "system":
+                    system_content = msg.get("content", "")
+                elif msg.get("role") == "user":
+                    user_message = msg.get("content", "")
+            
+            # Concatenar para Responses API (requer input único)
+            combined_input = f"INSTRUÇÕES:\n{system_content}\n\nCONTEÚDO:\n{user_message}"
+            
+            print(f"📝 System prompt length: {len(system_content)} chars")
+            print(f"📝 User message length: {len(user_message)} chars")
+            print(f"📝 Combined input length: {len(combined_input)} chars")
+            
+            # ✅ Responses API com parâmetros corretos para GPT-5
+            response = openai_client.responses.create(
+                model=model,
+                input=combined_input,
+                max_output_tokens=max_tokens,
+                reasoning={"effort": "low"},  # Baixo esforço para velocidade
+                text={"verbosity": "high"}  # Alta verbosidade para análise completa
+            )
+            
+            print(f"✅ Resposta GPT-5 recebida | Output tokens: {max_tokens}")
+            
+            # Converter para formato compatível com Chat Completions
+            return CompatResponse(response.output_text), None
         
+        else:
+            # Chat Completions API para outros modelos (GPT-4o, GPT-4, etc)
+            print(f"🔄 Usando Chat Completions API para {model}...")
+            
+            try:
+                # Tentar com max_completion_tokens (novo SDK)
+                response = openai_client.chat.completions.create(
+                    model=model,
+                    messages=messages,
+                    max_completion_tokens=max_tokens,
+                    temperature=0.7,
+                    timeout=OPENAI_TIMEOUT
+                )
+                print(f"✅ Usando max_completion_tokens: {max_tokens}")
+                return response, None
+            except TypeError:
+                # Fallback para max_tokens (SDK antigo ou modelos antigos)
+                response = openai_client.chat.completions.create(
+                    model=model,
+                    messages=messages,
+                    max_tokens=max_tokens,
+                    temperature=0.7,
+                    timeout=OPENAI_TIMEOUT
+                )
+                print(f"✅ Usando max_tokens (compatibilidade): {max_tokens}")
+                return response, None
+    
+    except Exception as e:
+        print(f"❌ ERRO em process_openai_request: {type(e).__name__}: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return None, str(e)
+
+def analyze_with_openai(pdf_text, document_type='relatório', model='gpt-4o'):
+    """Analisar texto com OpenAI (GPT-5, GPT-4o, etc)"""
+    try:
         prompt = f"""Você é especialista em análise de relatórios financeiros de construção (Riviera Empreendimentos).
         
 Analise o seguinte {document_type} e extraia os dados estruturados:
@@ -512,21 +613,24 @@ Retorne APENAS um JSON válido (sem markdown, sem explicações) com esta estrut
 DOCUMENTO:
 {pdf_text}"""
         
-        response = client.chat.completions.create(
-            model="gpt-4o",
-            messages=[
-                {
-                    "role": "system",
-                    "content": "Retorne APENAS JSON válido, sem markdown."
-                },
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ],
-            temperature=0.3,
-            max_tokens=2000
-        )
+        messages = [
+            {
+                "role": "system",
+                "content": "Retorne APENAS JSON válido, sem markdown."
+            },
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ]
+        
+        # Usar função unificada com suporte a GPT-5
+        print(f"🤖 Analisando com {model}...")
+        response, error = process_openai_request(messages, model, max_tokens=2000)
+        
+        if error:
+            print(f"❌ Erro ao chamar OpenAI: {error}")
+            raise ValueError(f"Erro na API OpenAI: {error}")
         
         # Extrair conteúdo e fazer parse JSON
         response_text = response.choices[0].message.content.strip()
@@ -544,7 +648,7 @@ DOCUMENTO:
         print(f"❌ Erro ao fazer parse JSON da resposta OpenAI: {e}")
         raise ValueError(f"Resposta inválida do OpenAI: {str(e)}")
     except Exception as e:
-        print(f"❌ Erro ao chamar OpenAI: {e}")
+        print(f"❌ Erro ao analisar com OpenAI: {e}")
         raise
 
 def save_analysis_to_db(analysis):
@@ -589,15 +693,18 @@ def save_analysis_to_db(analysis):
 @app.route('/api/analyze-pdf', methods=['POST'])
 def analyze_pdf_endpoint():
     """
-    Endpoint para análise automática de PDF com OpenAI
+    Endpoint para análise automática de PDF com OpenAI (suporta GPT-5, GPT-4o, etc)
     
     Request:
         - file: PDF file (multipart/form-data)
+        - model: Modelo OpenAI (opcional, padrão: 'gpt-4o')
+               Suportados: 'gpt-5', 'gpt-4o', 'gpt-4', 'gpt-3.5-turbo'
     
     Response:
         {
             "status": "success|error",
             "data": {...análise extraída...},
+            "model": "modelo usado",
             "message": "..."
         }
     """
@@ -629,6 +736,17 @@ def analyze_pdf_endpoint():
                 'message': 'Arquivo muito grande (máximo 50MB)'
             }), 400
         
+        # Obter modelo do parâmetro ou usar padrão
+        model = request.form.get('model', 'gpt-4o')
+        
+        # Validar modelo
+        modelos_suportados = ['gpt-5', 'gpt-4o', 'gpt-4', 'gpt-3.5-turbo']
+        if model not in modelos_suportados:
+            print(f"⚠️ Modelo '{model}' não suportado. Usando gpt-4o.")
+            model = 'gpt-4o'
+        
+        print(f"🔧 Modelo selecionado: {model}")
+        
         # 1. Extrair texto do PDF
         print(f"📄 Extraindo texto de: {file.filename}")
         pdf_text = extract_pdf_text(file)
@@ -641,9 +759,9 @@ def analyze_pdf_endpoint():
         
         print(f"✅ Texto extraído ({len(pdf_text)} caracteres)")
         
-        # 2. Analisar com OpenAI
-        print("🤖 Analisando com OpenAI GPT-4o...")
-        analysis = analyze_with_openai(pdf_text, document_type='relatório financeiro')
+        # 2. Analisar com OpenAI (usando modelo selecionado)
+        print(f"🤖 Analisando com {model}...")
+        analysis = analyze_with_openai(pdf_text, document_type='relatório financeiro', model=model)
         
         print(f"✅ Análise concluída: {analysis.get('codigo_obra')} - {analysis.get('competencia')}")
         
@@ -655,7 +773,8 @@ def analyze_pdf_endpoint():
         
         return jsonify({
             'status': 'success',
-            'message': 'PDF analisado e salvo com sucesso',
+            'message': f'PDF analisado com sucesso usando {model}',
+            'model': model,
             'data': analysis
         }), 200
     
@@ -665,10 +784,97 @@ def analyze_pdf_endpoint():
             'message': str(e)
         }), 400
     except Exception as e:
-        print(f"❌ Erro ao analisar PDF: {e}")
+        print(f"❌ Erro ao processar PDF: {str(e)}")
         return jsonify({
             'status': 'error',
             'message': f'Erro ao processar PDF: {str(e)}'
+        }), 500
+
+# ================================
+# ENDPOINT - CHAT COM IA (COMPATÍVEL COM FRONTEND)
+# ================================
+
+@app.route('/api/chat', methods=['POST'])
+def chat_endpoint():
+    """
+    Endpoint de chat unificado com suporte a múltiplos modelos (GPT-5, GPT-4o, etc)
+    
+    Request (JSON):
+        {
+            "model": "gpt-4o" (ou "gpt-5", "gpt-4", "gpt-3.5-turbo"),
+            "messages": [
+                {"role": "system", "content": "..."},
+                {"role": "user", "content": "..."}
+            ],
+            "max_tokens": 2000
+        }
+    
+    Response:
+        {
+            "choices": [{
+                "message": {
+                    "content": "resposta da IA"
+                }
+            }],
+            "model": "modelo usado",
+            "tokens_info": {...}
+        }
+    """
+    try:
+        data = request.json
+        
+        if not data:
+            return jsonify({
+                'error': 'Requisição vazia'
+            }), 400
+        
+        model = data.get('model', 'gpt-4o')
+        messages = data.get('messages', [])
+        max_tokens = data.get('max_tokens', 2000)
+        
+        # Validar modelo
+        modelos_suportados = ['gpt-5', 'gpt-4o', 'gpt-4', 'gpt-3.5-turbo']
+        if model not in modelos_suportados:
+            model = 'gpt-4o'
+            print(f"⚠️ Modelo inválido. Usando padrão: {model}")
+        
+        print(f"💬 Chat endpoint chamado")
+        print(f"   Modelo: {model}")
+        print(f"   Mensagens: {len(messages)}")
+        print(f"   Max tokens: {max_tokens}")
+        
+        # Chamar process_openai_request
+        response, error = process_openai_request(messages, model, max_tokens)
+        
+        if error:
+            print(f"❌ Erro ao processar requisição: {error}")
+            return jsonify({
+                'error': error
+            }), 500
+        
+        # Formatar resposta compatível com frontend
+        content = response.choices[0].message.content
+        
+        print(f"✅ Resposta gerada ({len(content)} chars)")
+        
+        return jsonify({
+            'choices': [{
+                'message': {
+                    'content': content
+                }
+            }],
+            'model': model,
+            'tokens_info': {
+                'max_tokens': max_tokens
+            }
+        }), 200
+    
+    except Exception as e:
+        print(f"❌ Erro no endpoint /api/chat: {type(e).__name__}: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'error': str(e)
         }), 500
 
 # ================================
