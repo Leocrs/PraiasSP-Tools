@@ -179,14 +179,10 @@ def health():
         'service': 'Riviera Ingestor'
     }), 200
 
-@app.route('/', methods=['GET'])
+@app.route('/', methods=['GET', 'HEAD'])
 def index():
-    """Servir página inicial"""
-    try:
-        return send_from_directory(os.path.join(os.path.dirname(__file__), '..', 'templates'), 'index.html')
-    except Exception as e:
-        print(f"❌ Erro ao servir index.html: {e}")
-        return jsonify({'error': 'Página não encontrada', 'details': str(e)}), 404
+    """Rota raiz - verifica se API está online"""
+    return "PraiasSP-Tools API online", 200
 
 # ================================
 # ROTAS - DADOS
