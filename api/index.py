@@ -726,7 +726,7 @@ DOCUMENTO A PROCESSAR:
         
         # Usar função unificada com suporte a GPT-5
         print(f"🤖 Analisando com {model}...")
-        response, error = process_openai_request(messages, model, max_tokens=4000)
+        response, error = process_openai_request(messages, model, max_tokens=6000)
         
         if error:
             print(f"❌ Erro ao chamar OpenAI: {error}")
