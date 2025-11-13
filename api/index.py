@@ -1104,11 +1104,11 @@ def chat_endpoint():
             print(f"⚠️ Modelo '{model}' não suportado. Usando padrão: gpt-5")
             model = 'gpt-5'
         
-        # CRÍTICO: Limites por modelo (GPT-5 pode usar até 8k tokens com LOW effort)
+        # CRÍTICO: Limites por modelo (copiar exatamente da referência)
         if model.startswith('gpt-5'):
-            max_tokens = min(data.get('max_tokens', 4000), 8000)  # GPT-5: até 8k
+            max_tokens = min(data.get('max_tokens', 6000), 12000)  # GPT-5: até 12k tokens
         else:
-            max_tokens = min(data.get('max_tokens', 2000), 4000)   # Outros: até 4k
+            max_tokens = min(data.get('max_tokens', 2000), 4000)   # Outros: até 4k tokens
         
         # Logging estruturado
         print("\n" + "="*60)
