@@ -554,8 +554,11 @@
           { role: "user", content: userMessage },
         ];
 
-        // URL do backend Render (endpoint /api/chat para requisições JSON)
-        const backendUrl = "https://praiassp-tools.onrender.com/api/chat";
+        // Determinar URL do backend automaticamente
+        const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+        const backendUrl = isLocalhost 
+          ? "http://localhost:5000/api/chat"
+          : "https://praiassp-tools.onrender.com/api/chat";
 
         try {
           console.log("📡 POST:", backendUrl);
