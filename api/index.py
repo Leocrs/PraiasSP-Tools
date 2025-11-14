@@ -5,6 +5,7 @@ API Principal para processamento de relatórios financeiros
 
 import os
 import sys
+import io
 import sqlite3
 import signal
 import time
@@ -735,6 +736,104 @@ def get_resumo_alertas():
         }), 500
 
 # ================================
+# ROTAS - RELATÓRIO EXECUTIVO HTML
+# ================================
+
+@app.route('/api/relatorio/gerar', methods=['POST'])
+def gerar_relatorio():
+    """
+    Gerar relatório executivo HTML consolidado para uma competência.
+    
+    Request (JSON):
+        {
+            "competencia": "09/2025"
+        }
+    
+    Response:
+        {
+            "status": "success",
+            "html": "...html_string...",
+            "competencia": "09/2025"
+        }
+    """
+    try:
+        data = request.json
+        competencia = data.get('competencia')
+        
+        if not competencia:
+            return jsonify({
+                'status': 'error',
+                'message': 'Competência não informada (ex: "09/2025")'
+            }), 400
+        
+        # Validar formato da competência
+        if not competencia or len(competencia) != 7 or competencia[2] != '/':
+            return jsonify({
+                'status': 'error',
+                'message': 'Formato de competência inválido. Use: MM/YYYY (ex: 09/2025)'
+            }), 400
+        
+        # Gerar HTML
+        print(f"🔄 Gerando relatório para competência: {competencia}")
+        html = gerar_html_relatorio_executivo(competencia)
+        
+        if not html:
+            return jsonify({
+                'status': 'error',
+                'message': 'Erro ao gerar relatório. Verifique se há dados para esta competência.'
+            }), 500
+        
+        print(f"✅ Relatório gerado com sucesso para {competencia}")
+        
+        return jsonify({
+            'status': 'success',
+            'competencia': competencia,
+            'html': html,
+            'message': f'Relatório executivo gerado com sucesso para {competencia}'
+        }), 200
+    
+    except Exception as e:
+        print(f"❌ Erro ao gerar relatório: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'status': 'error',
+            'message': f'Erro ao gerar relatório: {str(e)}'
+        }), 500
+
+@app.route('/api/relatorio/download/<competencia>', methods=['GET'])
+def download_relatorio(competencia):
+    """
+    Download do relatório HTML como arquivo.
+    
+    URL: GET /api/relatorio/download/09/2025
+    """
+    try:
+        # Gerar HTML
+        html = gerar_html_relatorio_executivo(competencia)
+        
+        if not html:
+            return jsonify({
+                'status': 'error',
+                'message': 'Relatório não encontrado'
+            }), 404
+        
+        # Retornar como arquivo para download
+        return send_file(
+            io.BytesIO(html.encode('utf-8')),
+            mimetype='text/html',
+            as_attachment=True,
+            download_name=f'Riviera_Relatorio_{competencia}.html'
+        )
+    
+    except Exception as e:
+        print(f"❌ Erro ao fazer download do relatório: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+# ================================
 # FASE 2.1 - ANÁLISE COM OpenAI
 # ================================
 
@@ -1266,6 +1365,222 @@ def gerar_alertas_desvio(analysis):
             print(f"{'='*60}\n")
     
     return alertas
+
+def gerar_html_relatorio_executivo(competencia):
+    """
+    Gerar relatório executivo HTML consolidado para uma competência.
+    
+    Args:
+        competencia (str): Competência no formato "MM/YYYY" (ex: "09/2025")
+    
+    Returns:
+        str: HTML string pronto para exibição/download
+    """
+    try:
+        # Buscar dados consolidados do banco
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            
+            # Buscar todas as obras e movimentos da competência
+            cursor.execute('''
+                SELECT DISTINCT codigo_obra, obra_nome 
+                FROM movimentos 
+                WHERE competencia = ?
+                ORDER BY codigo_obra
+            ''', (competencia,))
+            obras = cursor.fetchall()
+            
+            # Consolidar dados por obra
+            obras_dados = {}
+            for obra in obras:
+                cod_obra = obra[0]
+                nome_obra = obra[1]
+                
+                # Despesas
+                cursor.execute('''
+                    SELECT SUM(valor) FROM movimentos 
+                    WHERE competencia = ? AND codigo_obra = ? AND tipo = 'Despesa'
+                ''', (competencia, cod_obra))
+                despesas = cursor.fetchone()[0] or 0
+                
+                # Receitas
+                cursor.execute('''
+                    SELECT SUM(valor) FROM movimentos 
+                    WHERE competencia = ? AND codigo_obra = ? AND tipo = 'Receita'
+                ''', (competencia, cod_obra))
+                receitas = cursor.fetchone()[0] or 0
+                
+                # Saldo (aproximado: receitas - despesas)
+                saldo = receitas - despesas
+                
+                obras_dados[cod_obra] = {
+                    'nome': nome_obra,
+                    'despesas': despesas,
+                    'receitas': receitas,
+                    'saldo': saldo
+                }
+            
+            # Totais consolidados
+            total_despesas = sum(o['despesas'] for o in obras_dados.values())
+            total_receitas = sum(o['receitas'] for o in obras_dados.values())
+            total_saldo = total_receitas - total_despesas
+        
+        # Formatar data para exibição
+        try:
+            mes, ano = competencia.split('/')
+            meses = ['', 'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+                     'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
+            mes_nome = meses[int(mes)]
+            data_exibicao = f"{mes_nome}/{ano}"
+        except:
+            data_exibicao = competencia
+        
+        # Gerar HTML
+        html = f"""<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Riviera - Relatório Executivo {competencia}</title>
+    <link rel="stylesheet" href="https://praias-sp-tools.vercel.app/static/relatorio_styles.css">
+    <style>
+        /* Estilos inline para garantir que funcionem mesmo sem CSS externo */
+        body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto; background: #f5f7fa; }}
+        .relatorio-container {{ max-width: 1200px; margin: 0 auto; background: white; }}
+        .relatorio-header {{ background: linear-gradient(135deg, #0e938f 0%, #0b7a77 100%); color: white; padding: 40px 30px; text-align: center; }}
+        .relatorio-header h1 {{ font-size: 32px; margin: 0; }}
+        .relatorio-header p {{ margin: 5px 0 0 0; opacity: 0.95; }}
+        .cards-container {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; padding: 30px; background: #f9fafb; }}
+        .card {{ background: white; border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); border-left: 4px solid #0e938f; }}
+        .card-label {{ font-size: 13px; color: #718096; text-transform: uppercase; font-weight: 600; margin-bottom: 8px; }}
+        .card-value {{ font-size: 28px; font-weight: 700; color: #0e938f; }}
+        .relatorio-section {{ padding: 30px; border-bottom: 1px solid #e5e7eb; }}
+        .relatorio-section h2 {{ font-size: 20px; margin-bottom: 20px; border-bottom: 2px solid #0e938f; padding-bottom: 12px; }}
+        .relatorio-table {{ width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 14px; }}
+        .relatorio-table thead {{ background: #0e938f; color: white; }}
+        .relatorio-table th {{ padding: 14px 16px; text-align: left; font-weight: 600; }}
+        .relatorio-table td {{ padding: 12px 16px; border-bottom: 1px solid #e5e7eb; }}
+        .relatorio-table .numeric {{ text-align: right; font-family: monospace; }}
+        .alert {{ padding: 16px 20px; border-radius: 8px; margin: 16px 0; border-left: 4px solid; }}
+        .alert-info {{ background: #dbeafe; border-left-color: #3b82f6; color: #1e40af; }}
+        .relatorio-footer {{ background: #f3f4f6; padding: 20px 30px; text-align: center; color: #6b7280; font-size: 12px; }}
+        .text-green {{ color: #10b981; font-weight: 600; }}
+        .text-red {{ color: #ef4444; font-weight: 600; }}
+    </style>
+</head>
+<body>
+<div class="relatorio-container">
+    <!-- CABEÇALHO -->
+    <div class="relatorio-header">
+        <h1>🏗️ RIVIERA - RELATÓRIO EXECUTIVO</h1>
+        <p>Consolidação Financeira - {data_exibicao}</p>
+        <p style="font-size: 13px; margin-top: 10px;">Gerado em {datetime.now().strftime('%d/%m/%Y às %H:%M:%S')}</p>
+    </div>
+
+    <!-- CARDS RESUMO -->
+    <div class="cards-container">
+        <div class="card card-despesas">
+            <div class="card-label">💰 Despesas Totais</div>
+            <div class="card-value">R$ {total_despesas:,.2f}</div>
+        </div>
+        <div class="card card-aportes">
+            <div class="card-label">📈 Receitas/Aportes</div>
+            <div class="card-value">R$ {total_receitas:,.2f}</div>
+        </div>
+        <div class="card card-saldo">
+            <div class="card-label">💵 Saldo Líquido</div>
+            <div class="card-value">{('text-green' if total_saldo >= 0 else 'text-red')}R$ {abs(total_saldo):,.2f}</div>
+        </div>
+        <div class="card card-rentabilidade">
+            <div class="card-label">📊 Obras Processadas</div>
+            <div class="card-value">{len(obras_dados)}</div>
+        </div>
+    </div>
+
+    <!-- CONSOLIDAÇÃO POR OBRA -->
+    <div class="relatorio-section">
+        <h2>📋 Consolidação por Obra</h2>
+        <table class="relatorio-table">
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Obra</th>
+                    <th class="numeric">Despesas</th>
+                    <th class="numeric">Receitas</th>
+                    <th class="numeric">Saldo</th>
+                </tr>
+            </thead>
+            <tbody>
+"""
+        
+        # Adicionar linhas de obras
+        for cod, dados in sorted(obras_dados.items()):
+            saldo_class = 'text-green' if dados['saldo'] >= 0 else 'text-red'
+            html += f"""                <tr>
+                    <td><strong>{cod}</strong></td>
+                    <td>{dados['nome']}</td>
+                    <td class="numeric">R$ {dados['despesas']:,.2f}</td>
+                    <td class="numeric">R$ {dados['receitas']:,.2f}</td>
+                    <td class="numeric {saldo_class}">R$ {abs(dados['saldo']):,.2f}</td>
+                </tr>
+"""
+        
+        html += f"""            </tbody>
+            <tfoot style="background: #f9fafb; font-weight: 700; border-top: 2px solid #0e938f;">
+                <tr>
+                    <td colspan="2"><strong>TOTAL</strong></td>
+                    <td class="numeric"><strong>R$ {total_despesas:,.2f}</strong></td>
+                    <td class="numeric"><strong>R$ {total_receitas:,.2f}</strong></td>
+                    <td class="numeric {'text-green' if total_saldo >= 0 else 'text-red'}"><strong>R$ {abs(total_saldo):,.2f}</strong></td>
+                </tr>
+            </tfoot>
+        </table>
+
+        <div class="alert alert-info">
+            <div>
+                <strong>📊 Resumo da Competência:</strong><br>
+                Foram processadas {len(obras_dados)} obra(s) em {competencia}. 
+                O saldo consolidado é de <strong>R$ {abs(total_saldo):,.2f}</strong> 
+                {('(POSITIVO)' if total_saldo >= 0 else '(NEGATIVO)')}.
+            </div>
+        </div>
+    </div>
+
+    <!-- RODAPÉ -->
+    <div class="relatorio-footer">
+        <p><strong>Riviera Empreendimentos - Planejamento Financeiro</strong></p>
+        <p>Este relatório foi gerado automaticamente pelo sistema de análise PraiasSP-Tools</p>
+        <p>Para dúvidas ou alterações, favor contactar o departamento financeiro</p>
+    </div>
+</div>
+
+<script>
+    // Permitir impressão e export
+    function imprimirRelatorio() {{
+        window.print();
+    }}
+    
+    function exportarHTML() {{
+        const html = document.documentElement.innerHTML;
+        const blob = new Blob([html], {{ type: 'text/html' }});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'Riviera_Relatorio_{competencia}.html';
+        a.click();
+    }}
+</script>
+</body>
+</html>
+"""
+        
+        return html
+    
+    except Exception as e:
+        print(f"❌ Erro ao gerar relatório HTML: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
 
 def save_analysis_to_db(analysis):
     """Salvar análise no banco de dados"""

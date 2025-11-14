@@ -1,0 +1,433 @@
+/* ============================================
+   RIVIERA - RELATÓRIO EXECUTIVO
+   Estilos para HTML de Relatório Financeiro
+   ============================================ */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  background: #f5f7fa;
+  color: #2d3748;
+  line-height: 1.6;
+  padding: 0;
+  margin: 0;
+}
+
+.relatorio-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  background: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* ============================================
+   CABEÇALHO
+   ============================================ */
+
+.relatorio-header {
+  background: linear-gradient(135deg, #0e938f 0%, #0b7a77 100%);
+  color: white;
+  padding: 40px 30px;
+  text-align: center;
+  border-bottom: 4px solid #059669;
+}
+
+.relatorio-header h1 {
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  letter-spacing: -0.5px;
+}
+
+.relatorio-header p {
+  font-size: 16px;
+  opacity: 0.95;
+  margin: 0;
+}
+
+.relatorio-meta {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  margin-top: 15px;
+  font-size: 14px;
+  opacity: 0.9;
+  flex-wrap: wrap;
+}
+
+.relatorio-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ============================================
+   CARDS DE RESUMO
+   ============================================ */
+
+.cards-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+  padding: 30px;
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.card {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border-left: 4px solid #0e938f;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.card-label {
+  font-size: 13px;
+  color: #718096;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.card-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #0e938f;
+  word-break: break-word;
+}
+
+.card-unit {
+  font-size: 12px;
+  color: #a0aec0;
+  margin-left: 4px;
+  font-weight: 400;
+}
+
+/* Variações de cores para cards */
+.card.card-saldo {
+  border-left-color: #10b981;
+}
+
+.card.card-saldo .card-value {
+  color: #10b981;
+}
+
+.card.card-despesas {
+  border-left-color: #f59e0b;
+}
+
+.card.card-despesas .card-value {
+  color: #f59e0b;
+}
+
+.card.card-aportes {
+  border-left-color: #3b82f6;
+}
+
+.card.card-aportes .card-value {
+  color: #3b82f6;
+}
+
+.card.card-rentabilidade {
+  border-left-color: #8b5cf6;
+}
+
+.card.card-rentabilidade .card-value {
+  color: #8b5cf6;
+}
+
+/* ============================================
+   SEÇÕES
+   ============================================ */
+
+.relatorio-section {
+  padding: 30px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.relatorio-section:last-child {
+  border-bottom: none;
+}
+
+.relatorio-section h2 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #0e938f;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.relatorio-section h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #2d3748;
+  margin-top: 20px;
+  margin-bottom: 12px;
+}
+
+/* ============================================
+   TABELAS
+   ============================================ */
+
+.relatorio-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.relatorio-table thead {
+  background: #0e938f;
+  color: white;
+}
+
+.relatorio-table th {
+  padding: 14px 16px;
+  text-align: left;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  border: none;
+}
+
+.relatorio-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #e5e7eb;
+  vertical-align: middle;
+}
+
+.relatorio-table tbody tr:hover {
+  background: #f9fafb;
+}
+
+.relatorio-table tbody tr:nth-child(even) {
+  background: #f9fafb;
+}
+
+/* Alinhamento de colunas numéricas */
+.relatorio-table .numeric {
+  text-align: right;
+  font-family: "Monaco", "Courier New", monospace;
+  font-size: 13px;
+}
+
+/* ============================================
+   ALERTAS E DESTAQUES
+   ============================================ */
+
+.alert {
+  padding: 16px 20px;
+  border-radius: 8px;
+  margin: 16px 0;
+  border-left: 4px solid;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.alert-warning {
+  background: #fef3c7;
+  border-left-color: #f59e0b;
+  color: #92400e;
+}
+
+.alert-danger {
+  background: #fee2e2;
+  border-left-color: #ef4444;
+  color: #991b1b;
+}
+
+.alert-info {
+  background: #dbeafe;
+  border-left-color: #3b82f6;
+  color: #1e40af;
+}
+
+.alert-success {
+  background: #dcfce7;
+  border-left-color: #10b981;
+  color: #166534;
+}
+
+.alert-icon {
+  font-size: 18px;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.alert-content {
+  flex: 1;
+}
+
+.alert-content strong {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+
+/* ============================================
+   RESUMO EXECUTIVO
+   ============================================ */
+
+.resumo-executivo {
+  background: #f0f9ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  padding: 20px;
+  margin: 20px 0;
+}
+
+.resumo-executivo p {
+  margin: 12px 0;
+  line-height: 1.7;
+  color: #1e40af;
+}
+
+.resumo-executivo strong {
+  color: #1e3a8a;
+  font-weight: 700;
+}
+
+/* ============================================
+   RODAPÉ
+   ============================================ */
+
+.relatorio-footer {
+  background: #f3f4f6;
+  padding: 20px 30px;
+  text-align: center;
+  color: #6b7280;
+  font-size: 12px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.relatorio-footer p {
+  margin: 8px 0;
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+
+@media print {
+  body {
+    background: white;
+  }
+
+  .relatorio-container {
+    box-shadow: none;
+    max-width: 100%;
+  }
+
+  .cards-container {
+    page-break-inside: avoid;
+  }
+
+  .relatorio-table {
+    page-break-inside: avoid;
+  }
+
+  .relatorio-section {
+    page-break-inside: avoid;
+  }
+}
+
+@media (max-width: 768px) {
+  .relatorio-header {
+    padding: 25px 20px;
+  }
+
+  .relatorio-header h1 {
+    font-size: 24px;
+  }
+
+  .cards-container {
+    grid-template-columns: 1fr;
+    padding: 20px;
+    gap: 15px;
+  }
+
+  .relatorio-section {
+    padding: 20px;
+  }
+
+  .relatorio-table {
+    font-size: 12px;
+  }
+
+  .relatorio-table th,
+  .relatorio-table td {
+    padding: 10px 12px;
+  }
+
+  .relatorio-meta {
+    flex-direction: column;
+    gap: 10px;
+    justify-content: center;
+  }
+}
+
+/* ============================================
+   UTILITÁRIOS
+   ============================================ */
+
+.text-green {
+  color: #10b981;
+  font-weight: 600;
+}
+
+.text-red {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.text-yellow {
+  color: #f59e0b;
+  font-weight: 600;
+}
+
+.bg-light {
+  background: #f9fafb;
+}
+
+.border-top {
+  border-top: 1px solid #e5e7eb;
+  padding-top: 20px;
+  margin-top: 20px;
+}
+
+.mt-20 {
+  margin-top: 20px;
+}
+
+.mb-20 {
+  margin-bottom: 20px;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-right {
+  text-align: right;
+}
